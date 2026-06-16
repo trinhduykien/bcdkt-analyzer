@@ -179,17 +179,17 @@ with tab1:
         col_start_b, col_end_b, _ = detect_columns(bcdkt_df, bccl_input_mode)
 
         bcdkt_items = {
-            "Tổng tài sản": ["tổng tài sản", "tổng ts"],
-            "Tài sản ngắn hạn": ["tài sản ngắn hạn", "ts ngắn hạn", "tài sản ngắn"],
-            "Tài sản dài hạn": ["tài sản dài hạn", "ts dài hạn", "tài sản dài"],
-            "Tiền và tương đương tiền": ["tiền và tương đương", "tiền"],
-            "Phải thu ngắn hạn": ["phải thu ngắn hạn", "phải thu khách hàng", "phải thu"],
-            "Hàng tồn kho": ["hàng tồn kho", "htk"],
-            "Tổng nợ phải trả": ["tổng nợ phải trả", "tổng nợ", "nợ phải trả"],
-            "Nợ ngắn hạn": ["nợ ngắn hạn", "nợ ngắn"],
-            "Nợ dài hạn": ["nợ dài hạn", "nợ dài"],
-            "Vốn chủ sở hữu": ["vốn chủ sở hữu", "vcsh", "vốn chủ"],
-            "Lợi nhuận chưa phân phối": ["lợi nhuận chưa phân phối", "ln cpt"],
+            "Tổng tài sản": ["tổng tài sản", "tổng ts", "tổng ts hợp nhất"],
+            "Tài sản ngắn hạn": ["tài sản ngắn hạn", "ts ngắn hạn", "tài sản ngắn", "tsngắn hạn"],
+            "Tài sản dài hạn": ["tài sản dài hạn", "ts dài hạn", "tài sản dài", "tsdài hạn"],
+            "Tiền và tương đương tiền": ["tiền và tương đương", "tiền", "tiền và tương đương tiền", "tiền mặt", "tiền gửi ngân hàng"],
+            "Phải thu ngắn hạn": ["phải thu ngắn hạn", "phải thu khách hàng", "phải thu", "phải thu ngắn hạn khác", "khoản phải thu ngắn hạn"],
+            "Hàng tồn kho": ["hàng tồn kho", "htk", "hàng tồn kho ròng"],
+            "Tổng nợ phải trả": ["tổng nợ phải trả", "tổng nợ", "nợ phải trả", "tổng nợ phải trả hợp nhất"],
+            "Nợ ngắn hạn": ["nợ ngắn hạn", "nợ ngắn", "nợ và phải trả ngắn hạn"],
+            "Nợ dài hạn": ["nợ dài hạn", "nợ dài", "nợ và phải trả dài hạn"],
+            "Vốn chủ sở hữu": ["vốn chủ sở hữu", "vcsh", "vốn chủ", "vốn chủ sở hữu hợp nhất"],
+            "Lợi nhuận chưa phân phối": ["lợi nhuận chưa phân phối", "ln cpt", "lợi nhuận sau thuế chưa phân phối"],
         }
 
         bcdkt_extracted = extract_items(bcdkt_df, bcdkt_items, col_start_b, col_end_b)
@@ -339,18 +339,18 @@ with tab2:
         col_start_kq, col_end_kq, _ = detect_columns(bkq_df, bkq_mode)
 
         bkq_items = {
-            "Doanh thu thuần": ["doanh thu thuần", "doanh thu thuần về bán hàng", "dt thuần"],
-            "Doanh thu hoạt động tài chính": ["doanh thu hoạt động tài chính", "dt tài chính", "doanh thu ht tài chính"],
-            "Thu nhập khác": ["thu nhập khác", "thu nhập"],
-            "Chi phí vốn hàng bán": ["chi phí vốn hàng bán", "giá vốn hàng bán", "giá vốn", "cp vốn hàng bán"],
-            "Chi phí bán hàng": ["chi phí bán hàng", "cp bán hàng"],
-            "Chi phí quản lý doanh nghiệp": ["chi phí quản lý doanh nghiệp", "cp quản lý dn", "chi phí quản lý"],
-            "Chi phí tài chính": ["chi phí tài chính", "cp tài chính"],
-            "Chi phí khác": ["chi phí khác", "cp khác"],
-            "Lợi nhuận gộp": ["lợi nhuận gộp", "ln gộp", "lợi nhuận gộp về bán hàng"],
-            "Lợi nhuận thuần từ hoạt động kinh doanh": ["lợi nhuận thuần từ hdkd", "ln thuần từ hdkd", "lợi nhuận từ hdkd"],
-            "Lợi nhuận sau thuế": ["lợi nhuận sau thuế", "ln sau thuế", "lợi nhuận kế toán sau thuế"],
-            "Thuế thu nhập doanh nghiệp": ["thuế tndn", "thuế thu nhập doanh nghiệp", "thuế tndn hoãn lại"],
+            "Doanh thu thuần": ["doanh thu thuần", "doanh thu thuần về bán hàng", "dt thuần", "doanh thu thuần về bán hàng và cung cấp dịch vụ", "doanh thu"],
+            "Doanh thu hoạt động tài chính": ["doanh thu hoạt động tài chính", "dt tài chính", "doanh thu ht tài chính", "doanh thu từ hoạt động tài chính"],
+            "Thu nhập khác": ["thu nhập khác", "thu nhập", "thu nhập khác từ hoạt động tài chính"],
+            "Chi phí vốn hàng bán": ["chi phí vốn hàng bán", "giá vốn hàng bán", "giá vốn", "cp vốn hàng bán", "giá vốn hàng bán và cung cấp dịch vụ"],
+            "Chi phí bán hàng": ["chi phí bán hàng", "cp bán hàng", "chi phí bán hàng và cung cấp dịch vụ"],
+            "Chi phí quản lý doanh nghiệp": ["chi phí quản lý doanh nghiệp", "cp quản lý dn", "chi phí quản lý", "chi phí quản lý doanh nghiệp và cung cấp dịch vụ"],
+            "Chi phí tài chính": ["chi phí tài chính", "cp tài chính", "chi phí từ hoạt động tài chính"],
+            "Chi phí khác": ["chi phí khác", "cp khác", "chi phí khác từ hoạt động tài chính"],
+            "Lợi nhuận gộp": ["lợi nhuận gộp", "ln gộp", "lợi nhuận gộp về bán hàng", "lợi nhuận gộp về bán hàng và cung cấp dịch vụ"],
+            "Lợi nhuận thuần từ hoạt động kinh doanh": ["lợi nhuận thuần từ hoạt động kinh doanh", "lợi nhuận thuần từ hdkd", "ln thuần từ hdkd", "lợi nhuận từ hdkd", "lợi nhuận thuần từ hoạt động kinh doanh và cung cấp dịch vụ", "lợi nhuận từ hoạt động kinh doanh"],
+            "Lợi nhuận sau thuế": ["lợi nhuận sau thuế", "ln sau thuế", "lợi nhuận kế toán sau thuế", "lợi nhuận sau thuế thu nhập doanh nghiệp"],
+            "Thuế thu nhập doanh nghiệp": ["thuế tndn", "thuế thu nhập doanh nghiệp", "thuế tndn hoãn lại", "chi phí thuế thu nhập doanh nghiệp"],
         }
 
         bkq_extracted = extract_items(bkq_df, bkq_items, col_start_kq, col_end_kq)
@@ -512,20 +512,20 @@ with tab3:
         col_start_cf, col_end_cf, _ = detect_columns(cf_df, cf_mode)
 
         cf_items = {
-            "Lưu chuyển tiền từ hoạt động kinh doanh": ["lưu chuyển tiền từ hđkd", "lưu chuyển tiền từ hoạt động kinh doanh", "lctt từ hđkd", "lưu chuyển từ hđkd", "lct hđkd"],
-            "Tiền thu từ bán hàng": ["tiền thu từ bán hàng", "thu từ bán hàng", "tiền thu bán hàng"],
-            "Tiền trả cho người bán": ["tiền trả cho người bán", "trả cho người bán", "chi cho người bán"],
-            "Tiền trả cho người lao động": ["tiền trả cho người lao động", "trả người lao động", "chi cho người lao động", "trả cho nlđ"],
-            "Tiền trả chi phí khác": ["tiền trả cho các chi phí khác", "chi phí khác", "tiền trả chi phí khác"],
-            "Lưu chuyển tiền từ hoạt động đầu tư": ["lưu chuyển tiền từ hđ đầu tư", "lưu chuyển từ hoạt động đầu tư", "lctt từ hđ đầu tư", "lct hđ đầu tư", "lct từ hđ đầu tư"],
-            "Tiền thu thanh lý tài sản cố định": ["thanh lý tscđ", "thu thanh lý", "thu bán tscđ", "tiền thu thanh lý tscđ", "thanh lý tài sản cố định"],
-            "Tiền chi mua sắm tài sản cố định": ["mua sắm tscđ", "chi mua sắm tscđ", "tiền chi mua sắm", "đầu tư tscđ", "mua sắm csxd", "mua sắm tài sản cố định"],
-            "Lưu chuyển tiền từ hoạt động tài chính": ["lưu chuyển tiền từ hđ tài chính", "lưu chuyển từ hoạt động tài chính", "lctt từ hđ tài chính", "lct hđ tài chính"],
-            "Tiền thu từ vay vốn": ["tiền thu từ vay vốn", "thu từ vay", "vay vốn"],
-            "Tiền trả nợ vay": ["tiền trả nợ vay", "trả nợ vay", "trả nợ"],
-            "Lưu chuyển tiền thuần": ["lưu chuyển tiền thuần", "lct thuần", "lưu chuyển thuần", "tăng/giảm tiền"],
-            "Tiền đầu kỳ": ["tiền đầu kỳ", "số dư đầu kỳ", "tiền đầu năm"],
-            "Tiền cuối kỳ": ["tiền cuối kỳ", "số dư cuối kỳ", "tiền cuối năm"],
+            "Lưu chuyển tiền từ hoạt động kinh doanh": ["lưu chuyển tiền từ hoạt động kinh doanh", "lưu chuyển tiền từ hđkd", "lưu chuyển từ hoạt động kinh doanh", "lctt từ hoạt động kinh doanh", "lctt từ hđkd", "lưu chuyển từ hđkd", "lct hđkd", "lct hoạt động kinh doanh", "lưu chuyển tiền thuần từ hđkd", "dòng tiền từ hoạt động kinh doanh", "dòng tiền hđkd", "lưu chuyển tiền lũy kế từ hoạt động kinh doanh"],
+            "Tiền thu từ bán hàng": ["tiền thu từ bán hàng", "thu từ bán hàng", "tiền thu bán hàng", "thu tiền từ bán hàng"],
+            "Tiền trả cho người bán": ["tiền trả cho người bán", "trả cho người bán", "chi cho người bán", "tiền thanh toán cho người bán"],
+            "Tiền trả cho người lao động": ["tiền trả cho người lao động", "trả người lao động", "chi cho người lao động", "trả cho nlđ", "tiền lương", "chi phí nhân sự", "chi trả cho người lao động"],
+            "Tiền trả chi phí khác": ["tiền trả cho các chi phí khác", "chi phí khác", "tiền trả chi phí khác", "thuế và các khoản khác"],
+            "Lưu chuyển tiền từ hoạt động đầu tư": ["lưu chuyển tiền từ hoạt động đầu tư", "lưu chuyển tiền từ hđ đầu tư", "lưu chuyển từ hoạt động đầu tư", "lctt từ hoạt động đầu tư", "lctt từ hđ đầu tư", "lct hđ đầu tư", "lct từ hđ đầu tư", "lct hoạt động đầu tư", "dòng tiền từ hoạt động đầu tư", "dòng tiền hđ đầu tư", "lưu chuyển tiền lũy kế từ hoạt động đầu tư"],
+            "Tiền thu thanh lý tài sản cố định": ["thanh lý tài sản cố định", "thanh lý tscđ", "thu thanh lý", "thu bán tscđ", "tiền thu thanh lý tscđ", "tiền thu từ thanh lý", "thu tiền từ bán tscđ"],
+            "Tiền chi mua sắm tài sản cố định": ["mua sắm tài sản cố định", "mua sắm tscđ", "chi mua sắm tscđ", "tiền chi mua sắm", "đầu tư tscđ", "mua sắm csxd", "tiền chi cho hoạt động đầu tư", "chi mua sắm tài sản cố định", "đầu tư tài sản cố định"],
+            "Lưu chuyển tiền từ hoạt động tài chính": ["lưu chuyển tiền từ hoạt động tài chính", "lưu chuyển tiền từ hđ tài chính", "lưu chuyển từ hoạt động tài chính", "lctt từ hoạt động tài chính", "lctt từ hđ tài chính", "lct hđ tài chính", "lct hoạt động tài chính", "dòng tiền từ hoạt động tài chính", "dòng tiền hđ tài chính", "lưu chuyển tiền lũy kế từ hoạt động tài chính"],
+            "Tiền thu từ vay vốn": ["tiền thu từ vay vốn", "thu từ vay", "vay vốn", "tiền vay nhận được"],
+            "Tiền trả nợ vay": ["tiền trả nợ vay", "trả nợ vay", "trả nợ", "thanh toán nợ vay", "chi trả nợ vay"],
+            "Lưu chuyển tiền thuần": ["lưu chuyển tiền thuần", "lct thuần", "lưu chuyển thuần", "tăng/giảm tiền", "lưu chuyển tiền thuần trong kỳ", "tăng giảm tiền"],
+            "Tiền đầu kỳ": ["tiền đầu kỳ", "số dư đầu kỳ", "tiền đầu năm", "tiền và tương đương tiền đầu kỳ", "số dư tiền đầu kỳ"],
+            "Tiền cuối kỳ": ["tiền cuối kỳ", "số dư cuối kỳ", "tiền cuối năm", "tiền và tương đương tiền cuối kỳ", "số dư tiền cuối kỳ"],
         }
 
         cf_extracted = extract_items(cf_df, cf_items, col_start_cf, col_end_cf)
