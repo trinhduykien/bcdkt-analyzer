@@ -196,7 +196,7 @@ with tab1:
             ch1, ch2 = st.columns(2)
 
             with ch1:
-                st.markdown("**🥧 Cơ cấu tài sản**")
+                st.markdown("**🥧 Cơ cấu tài sản (Cuối kỳ)**")
                 pie_vals, pie_labels = [], []
                 for label, key in [("Tài sản ngắn hạn", "Tài sản ngắn hạn"), ("Tài sản dài hạn", "Tài sản dài hạn")]:
                     v = bcdkt_extracted.get(key, {}).get("Cuối kỳ")
@@ -212,7 +212,7 @@ with tab1:
                     st.plotly_chart(fig_pie, use_container_width=True)
 
             with ch2:
-                st.markdown("**📈 Cơ cấu nguồn vốn**")
+                st.markdown("**📈 Cơ cấu nguồn vốn (Đầu kỳ vs Cuối kỳ)**")
                 tong_no_dk = bcdkt_extracted.get("Tổng nợ phải trả", {}).get("Đầu kỳ")
                 vcsh_dk = bcdkt_extracted.get("Vốn chủ sở hữu", {}).get("Đầu kỳ")
                 if tong_no and vcsh:
@@ -221,6 +221,48 @@ with tab1:
                     fig_stack.add_trace(go.Bar(x=["Đầu kỳ", "Cuối kỳ"], y=[vcsh_dk or 0, vcsh], name="Vốn chủ sở hữu", marker_color="#636efa"))
                     fig_stack.update_layout(barmode="stack", height=350, yaxis_title="Giá trị")
                     st.plotly_chart(fig_stack, use_container_width=True)
+
+            # Additional charts for BCĐKT
+            ch3, ch4 = st.columns(2)
+
+            with ch3:
+                st.markdown("**📊 So sánh các chỉ tiêu (Đầu kỳ vs Cuối kỳ)**")
+                fig_bcdkt_bar = go.Figure()
+                for label in ["Tổng tài sản", "Tài sản ngắn hạn", "Tài sản dài hạn", "Tổng nợ phải trả", "Nợ ngắn hạn", "Nợ dài hạn", "Vốn chủ sở hữu"]:
+                    if label in bcdkt_extracted:
+                        dk = bcdkt_extracted[label].get("Đầu kỳ")
+                        ck = bcdkt_extracted[label].get("Cuối kỳ")
+                        fig_bcdkt_bar.add_trace(go.Bar(name=label, x=["Đầu kỳ", "Cuối kỳ"], y=[dk or 0, ck or 0]))
+                fig_bcdkt_bar.update_layout(barmode="group", height=350, yaxis_title="Giá trị")
+                st.plotly_chart(fig_bcdkt_bar, use_container_width=True)
+
+            with ch4:
+                st.markdown("**🥧 Cơ cấu nguồn vốn (Cuối kỳ)**")
+                nv_pie_vals, nv_pie_labels = [], []
+                if tong_no:
+                    nv_pie_vals.append(tong_no)
+                    nv_pie_labels.append("Nợ phải trả")
+                if vcsh:
+                    nv_pie_vals.append(vcsh)
+                    nv_pie_labels.append("Vốn chủ sở hữu")
+                if nv_pie_vals:
+                    fig_nv_pie = px.pie(values=nv_pie_vals, names=nv_pie_labels, hole=0.4, color_discrete_sequence=["#ef5545", "#636efa"])
+                    st.plotly_chart(fig_nv_pie, use_container_width=True)
+
+            # Thanh khoản gauge
+            st.markdown("**💧 Biểu đồ thanh khoản**")
+            tk_names = []
+            tk_vals = []
+            for k in ["Hệ số thanh toán hiện hành", "Hệ số thanh toán nhanh", "Hệ số thanh toán tức thời"]:
+                v = bcdkt_ratios.get(k)
+                if v is not None:
+                    tk_names.append(k.replace("Hệ số thanh toán ", "").title())
+                    tk_vals.append(round(v, 2))
+            if tk_vals:
+                fig_tk = go.Figure(data=[go.Bar(x=tk_names, y=tk_vals, marker_color=["#2ca02c", "#ff7f0e", "#636efa"])])
+                fig_tk.add_hline(y=1.0, line_dash="dash", line_color="red", annotation_text="Mức an toàn = 1.0")
+                fig_tk.update_layout(height=350, yaxis_title="Hệ số")
+                st.plotly_chart(fig_tk, use_container_width=True)
 
 # ============================================================
 # TAB 2: BÁO CÁO KẾT QUẢ HĐKD
@@ -342,17 +384,56 @@ with tab2:
                 fig_dtln.update_layout(barmode="group", height=350, yaxis_title="Giá trị")
                 st.plotly_chart(fig_dtln, use_container_width=True)
 
-            st.markdown("**📉 Biên lợi nhuận**")
-            margin_vals, margin_labels = [], []
-            for k in ["Biên lợi nhuận gộp", "Biên lợi nhuận hoạt động", "Biên lợi nhuận ròng"]:
-                v = bkq_ratios.get(k)
-                if v is not None:
-                    margin_vals.append(v * 100)
-                    margin_labels.append(k.replace("Biên lợi nhuận ", "").title())
-            if margin_vals:
-                fig_margin = go.Figure(data=[go.Bar(x=margin_labels, y=margin_vals, marker_color=["#636efa", "#ff7f0e", "#2ca02c"])])
-                fig_margin.update_layout(yaxis_title="%", height=350, yaxis=dict(ticksuffix="%"))
-                st.plotly_chart(fig_margin, use_container_width=True)
+            # Additional chart: CP/DT breakdown bar
+            ch3, ch4 = st.columns(2)
+
+            with ch3:
+                st.markdown("**📊 Tỷ trọng chi phí trên doanh thu thuần**")
+                cp_on_dt_names = []
+                cp_on_dt_vals = []
+                cp_on_dt_colors = []
+                for label, key, color in [("Chi phí vốn hàng bán", "Tỷ lệ chi phí vốn hàng bán trên doanh thu", "#d62728"),
+                                          ("Chi phí bán hàng", "Tỷ lệ chi phí bán hàng trên doanh thu", "#ff7f0e"),
+                                          ("Chi phí quản lý", "Tỷ lệ chi phí quản lý trên doanh thu", "#636efa")]:
+                    v = bkq_ratios.get(key)
+                    if v is not None:
+                        cp_on_dt_names.append(label)
+                        cp_on_dt_vals.append(round(v * 100, 1))
+                        cp_on_dt_colors.append(color)
+                if cp_on_dt_vals:
+                    fig_cpdt = go.Figure(data=[go.Bar(x=cp_on_dt_names, y=cp_on_dt_vals, marker_color=cp_on_dt_colors)])
+                    fig_cpdt.update_layout(height=350, yaxis_title="% trên doanh thu", yaxis=dict(ticksuffix="%"))
+                    st.plotly_chart(fig_cpdt, use_container_width=True)
+
+            with ch4:
+                st.markdown("**🥧 Cơ cấu doanh thu (Lợi nhuận gộp vs Chi phí vốn)**")
+                dt_pie_vals = []
+                dt_pie_labels = []
+                ln_gop_val = bkq_extracted.get("Lợi nhuận gộp", {}).get("Cuối kỳ")
+                cp_von_val = bkq_extracted.get("Chi phí vốn hàng bán", {}).get("Cuối kỳ")
+                if ln_gop_val:
+                    dt_pie_vals.append(ln_gop_val)
+                    dt_pie_labels.append("Lợi nhuận gộp")
+                if cp_von_val:
+                    dt_pie_vals.append(cp_von_val)
+                    dt_pie_labels.append("Chi phí vốn hàng bán")
+                if dt_pie_vals:
+                    fig_dt_pie = px.pie(values=dt_pie_vals, names=dt_pie_labels, hole=0.4, color_discrete_sequence=["#2ca02c", "#d62728"])
+                    st.plotly_chart(fig_dt_pie, use_container_width=True)
+
+            # Tăng trưởng comparison
+            if dt_thuan_dk or ln_st_dk:
+                st.markdown("**📈 Tăng trưởng Đầu kỳ vs Cuối kỳ**")
+                fig_growth_bkq = go.Figure()
+                items_bkq = [("Doanh thu thuần", "Doanh thu thuần"), ("Lợi nhuận gộp", "Lợi nhuận gộp"),
+                             ("Lợi nhuận HĐKD", "Lợi nhuận thuần từ hoạt động kinh doanh"), ("Lợi nhuận sau thuế", "Lợi nhuận sau thuế")]
+                for label, key in items_bkq:
+                    dk = bkq_extracted.get(key, {}).get("Đầu kỳ")
+                    ck = bkq_extracted.get(key, {}).get("Cuối kỳ")
+                    if dk or ck:
+                        fig_growth_bkq.add_trace(go.Bar(name=label, x=["Đầu kỳ", "Cuối kỳ"], y=[dk or 0, ck or 0]))
+                fig_growth_bkq.update_layout(barmode="group", height=350, yaxis_title="Giá trị")
+                st.plotly_chart(fig_growth_bkq, use_container_width=True)
 
 # ============================================================
 # TAB 3: BÁO CÁO LƯU CHUYỂN TIỀN TỆ
@@ -525,6 +606,55 @@ with tab3:
                                        marker_color="#636efa", name="Tiền cuối kỳ", showlegend=True))
                 fig_wf.update_layout(height=400, yaxis_title="Giá trị")
                 st.plotly_chart(fig_wf, use_container_width=True)
+
+            # Additional: Cumulative cash flow bar
+            ch5, ch6 = st.columns(2)
+            with ch5:
+                st.markdown("**📊 Tích lũy dòng tiền (Đầu kỳ vs Cuối kỳ)**")
+                cf_cum_labels = []
+                cf_cum_dk = []
+                cf_cum_ck = []
+                for label, key in [("Từ HĐ kinh doanh", "Lưu chuyển tiền từ hoạt động kinh doanh"),
+                                   ("Từ HĐ đầu tư", "Lưu chuyển tiền từ hoạt động đầu tư"),
+                                   ("Từ HĐ tài chính", "Lưu chuyển tiền từ hoạt động tài chính"),
+                                   ("Lưu chuyển thuần", "Lưu chuyển tiền thuần")]:
+                    dk_val = cf_extracted.get(key, {}).get("Đầu kỳ")
+                    ck_val = cf_extracted.get(key, {}).get("Cuối kỳ")
+                    if dk_val is not None or ck_val is not None:
+                        cf_cum_labels.append(label)
+                        cf_cum_dk.append(dk_val or 0)
+                        cf_cum_ck.append(ck_val or 0)
+                if cf_cum_labels:
+                    fig_cf_cum = go.Figure()
+                    fig_cf_cum.add_trace(go.Bar(name="Đầu kỳ", x=cf_cum_labels, y=cf_cum_dk, marker_color="#636efa"))
+                    fig_cf_cum.add_trace(go.Bar(name="Cuối kỳ", x=cf_cum_labels, y=cf_cum_ck, marker_color="#2ca02c"))
+                    fig_cf_cum.update_layout(barmode="group", height=350, yaxis_title="Giá trị")
+                    st.plotly_chart(fig_cf_cum, use_container_width=True)
+
+            with ch6:
+                st.markdown("**🥧 Tỷ trọng dòng tiền dương/âm (Cuối kỳ)**")
+                cf_pos_vals = []
+                cf_pos_labels = []
+                cf_neg_vals = []
+                cf_neg_labels = []
+                for label, key in [("HĐ kinh doanh", "Lưu chuyển tiền từ hoạt động kinh doanh"),
+                                   ("HĐ đầu tư", "Lưu chuyển tiền từ hoạt động đầu tư"),
+                                   ("HĐ tài chính", "Lưu chuyển tiền từ hoạt động tài chính")]:
+                    v = cf_extracted.get(key, {}).get("Cuối kỳ")
+                    if v is not None:
+                        if v >= 0:
+                            cf_pos_vals.append(v)
+                            cf_pos_labels.append(label)
+                        else:
+                            cf_neg_vals.append(abs(v))
+                            cf_neg_labels.append(label)
+                fig_cf_sign = go.Figure()
+                if cf_pos_vals:
+                    fig_cf_sign.add_trace(go.Bar(name="Dòng tiền dương (+)", x=cf_pos_labels, y=cf_pos_vals, marker_color="#2ca02c"))
+                if cf_neg_vals:
+                    fig_cf_sign.add_trace(go.Bar(name="Dòng tiền âm (-)", x=cf_neg_labels, y=cf_neg_vals, marker_color="#ef5545"))
+                fig_cf_sign.update_layout(barmode="group", height=350, yaxis_title="Giá trị", title="")
+                st.plotly_chart(fig_cf_sign, use_container_width=True)
 
 # ============================================================
 # TAB 4: COMBINED ANALYSIS
