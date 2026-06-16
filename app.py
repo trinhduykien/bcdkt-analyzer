@@ -620,98 +620,57 @@ with tab3:
                 fig_cf_bar.update_layout(barmode="group", height=350, yaxis_title="Giá trị")
                 st.plotly_chart(fig_cf_bar, use_container_width=True)
 
-            # Waterfall chart - professional style
-            st.markdown("**🌊 Biểu đồ thác nước dòng tiền**")
-            wf_labels = []
-            wf_vals = []
-            for label, key in [("Hoạt động kinh doanh", "Lưu chuyển tiền từ hoạt động kinh doanh"),
-                                ("Hoạt động đầu tư", "Lưu chuyển tiền từ hoạt động đầu tư"),
-                                ("Hoạt động tài chính", "Lưu chuyển tiền từ hoạt động tài chính")]:
-                v = cf_extracted.get(key, {}).get("Cuối kỳ")
-                if v is not None:
-                    wf_labels.append(label)
-                    wf_vals.append(v)
-            wf_labels.append("Tiền cuối kỳ")
-            wf_vals.append(cf_extracted.get("Tiền cuối kỳ", {}).get("Cuối kỳ") or 0)
-
-            if wf_vals:
-                fig_wf = go.Figure()
-                # Running total for waterfall
-                running_total = 0
-                for i, (lbl, val) in enumerate(zip(wf_labels[:-1], wf_vals[:-1])):
-                    if val >= 0:
-                        fig_wf.add_trace(go.Bar(
-                            x=[lbl], y=[val], base=[running_total],
-                            marker_color="#2ca02c", name=lbl if i == 0 else "",
-                            text=[f"+{val:,.0f}"], textposition="outside",
-                            showlegend=True if i == 0 else False,
-                            hovertemplate=f"{lbl}<br>Giá trị: {val:,.0f}<extra></extra>"
-                        ))
-                    else:
-                        fig_wf.add_trace(go.Bar(
-                            x=[lbl], y=[val], base=[running_total + val],
-                            marker_color="#ef5545", name=lbl if i == 0 else "",
-                            text=[f"{val:,.0f}"], textposition="outside",
-                            showlegend=True if i == 0 else False,
-                            hovertemplate=f"{lbl}<br>Giá trị: {val:,.0f}<extra></extra>"
-                        ))
-                    running_total += val
-                # Total bar
-                fig_wf.add_trace(go.Bar(
-                    x=[wf_labels[-1]], y=[wf_vals[-1]],
-                    marker_color="#636efa", name="Tiền cuối kỳ",
-                    text=[f"{wf_vals[-1]:,.0f}"], textposition="outside",
-                    hovertemplate=f"Tiền cuối kỳ<br>Giá trị: {wf_vals[-1]:,.0f}<extra></extra>"
-                ))
-                fig_wf.add_hline(y=0, line_dash="dash", line_color="gray", line_width=1)
-                fig_wf.update_layout(height=400, yaxis_title="Giá trị", legend=dict(orientation="h", yanchor="bottom", y=1.02))
-                st.plotly_chart(fig_wf, use_container_width=True)
-
-            # Additional: Cumulative cash flow bar
+            # Chart: Cash inflows (Tiền thu)
             ch5, ch6 = st.columns(2)
             with ch5:
-                st.markdown("**📊 Tích lũy dòng tiền (Đầu kỳ vs Cuối kỳ)**")
-                cf_cum_labels = []
-                cf_cum_dk = []
-                cf_cum_ck = []
-                for label, key in [("Từ hoạt động kinh doanh", "Lưu chuyển tiền từ hoạt động kinh doanh"),
-                                   ("Từ hoạt động đầu tư", "Lưu chuyển tiền từ hoạt động đầu tư"),
-                                   ("Từ hoạt động tài chính", "Lưu chuyển tiền từ hoạt động tài chính"),
-                                   ("Lưu chuyển thuần", "Lưu chuyển tiền thuần")]:
-                    dk_val = cf_extracted.get(key, {}).get("Đầu kỳ")
-                    ck_val = cf_extracted.get(key, {}).get("Cuối kỳ")
-                    if dk_val is not None or ck_val is not None:
-                        cf_cum_labels.append(label)
-                        cf_cum_dk.append(dk_val or 0)
-                        cf_cum_ck.append(ck_val or 0)
-                if cf_cum_labels:
-                    fig_cf_cum = go.Figure()
-                    fig_cf_cum.add_trace(go.Bar(name="Đầu kỳ", x=cf_cum_labels, y=cf_cum_dk, marker_color="#636efa"))
-                    fig_cf_cum.add_trace(go.Bar(name="Cuối kỳ", x=cf_cum_labels, y=cf_cum_ck, marker_color="#2ca02c"))
-                    fig_cf_cum.update_layout(barmode="group", height=350, yaxis_title="Giá trị")
-                    st.plotly_chart(fig_cf_cum, use_container_width=True)
+                st.markdown("**💰 Tiền thu**")
+                thu_items = [
+                    ("Thu từ bán hàng", "Tiền thu từ bán hàng"),
+                    ("Thu thanh lý TSCĐ", "Tiền thu thanh lý tài sản cố định"),
+                    ("Thu từ vay vốn", "Tiền thu từ vay vốn"),
+                ]
+                thu_labels, thu_dk, thu_ck = [], [], []
+                for lbl, key in thu_items:
+                    dk_v = cf_extracted.get(key, {}).get("Đầu kỳ")
+                    ck_v = cf_extracted.get(key, {}).get("Cuối kỳ")
+                    if dk_v is not None or ck_v is not None:
+                        thu_labels.append(lbl)
+                        thu_dk.append(dk_v or 0)
+                        thu_ck.append(ck_v or 0)
+                if thu_labels:
+                    fig_thu = go.Figure()
+                    fig_thu.add_trace(go.Bar(name="Đầu kỳ", x=thu_labels, y=thu_dk, marker_color="#636efa"))
+                    fig_thu.add_trace(go.Bar(name="Cuối kỳ", x=thu_labels, y=thu_ck, marker_color="#2ca02c"))
+                    fig_thu.update_layout(barmode="group", height=350, yaxis_title="Giá trị", legend=dict(orientation="h", yanchor="bottom", y=1.02))
+                    st.plotly_chart(fig_thu, use_container_width=True)
+                else:
+                    st.info("Chưa có dữ liệu tiền thu.")
 
             with ch6:
-                st.markdown("**📊 Đóng góp dòng tiền theo hoạt động**")
-                cf_stack_labels = []
-                cf_stack_kd = []
-                cf_stack_dt = []
-                cf_stack_tc = []
-                for period_label, period_key_suffix in [("Đầu kỳ", "Đầu kỳ"), ("Cuối kỳ", "Cuối kỳ")]:
-                    cf_stack_labels.append(period_label)
-                    kd_val = cf_extracted.get("Lưu chuyển tiền từ hoạt động kinh doanh", {}).get(period_key_suffix) or 0
-                    dt_val = cf_extracted.get("Lưu chuyển tiền từ hoạt động đầu tư", {}).get(period_key_suffix) or 0
-                    tc_val = cf_extracted.get("Lưu chuyển tiền từ hoạt động tài chính", {}).get(period_key_suffix) or 0
-                    cf_stack_kd.append(kd_val)
-                    cf_stack_dt.append(dt_val)
-                    cf_stack_tc.append(tc_val)
-                fig_cf_stack = go.Figure()
-                fig_cf_stack.add_trace(go.Bar(name="Hoạt động kinh doanh", y=cf_stack_labels, x=cf_stack_kd, orientation="h", marker_color="#2ca02c"))
-                fig_cf_stack.add_trace(go.Bar(name="Hoạt động đầu tư", y=cf_stack_labels, x=cf_stack_dt, orientation="h", marker_color="#636efa"))
-                fig_cf_stack.add_trace(go.Bar(name="Hoạt động tài chính", y=cf_stack_labels, x=cf_stack_tc, orientation="h", marker_color="#ff7f0e"))
-                fig_cf_stack.add_vline(x=0, line_dash="dash", line_color="gray", line_width=1)
-                fig_cf_stack.update_layout(barmode="relative", height=300, xaxis_title="Giá trị", legend=dict(orientation="h", yanchor="bottom", y=1.02))
-                st.plotly_chart(fig_cf_stack, use_container_width=True)
+                st.markdown("**💸 Tiền trả & Chi**")
+                chi_items = [
+                    ("Trả người bán", "Tiền trả cho người bán"),
+                    ("Trả người lao động", "Tiền trả cho người lao động"),
+                    ("Trả chi phí khác", "Tiền trả chi phí khác"),
+                    ("Mua sắm TSCĐ", "Tiền chi mua sắm tài sản cố định"),
+                    ("Trả nợ vay", "Tiền trả nợ vay"),
+                ]
+                chi_labels, chi_dk, chi_ck = [], [], []
+                for lbl, key in chi_items:
+                    dk_v = cf_extracted.get(key, {}).get("Đầu kỳ")
+                    ck_v = cf_extracted.get(key, {}).get("Cuối kỳ")
+                    if dk_v is not None or ck_v is not None:
+                        chi_labels.append(lbl)
+                        chi_dk.append(dk_v or 0)
+                        chi_ck.append(ck_v or 0)
+                if chi_labels:
+                    fig_chi = go.Figure()
+                    fig_chi.add_trace(go.Bar(name="Đầu kỳ", x=chi_labels, y=chi_dk, marker_color="#636efa"))
+                    fig_chi.add_trace(go.Bar(name="Cuối kỳ", x=chi_labels, y=chi_ck, marker_color="#ef5545"))
+                    fig_chi.update_layout(barmode="group", height=350, yaxis_title="Giá trị", legend=dict(orientation="h", yanchor="bottom", y=1.02))
+                    st.plotly_chart(fig_chi, use_container_width=True)
+                else:
+                    st.info("Chưa có dữ liệu tiền trả & chi.")
 
 # ============================================================
 # TAB 4: COMBINED ANALYSIS
