@@ -944,4 +944,4 @@ with tab4:
 # FOOTER
 # ============================================================
 st.markdown("---")
-st.markdown("🔧 Built with Streamlit + Plotly | 📊 Phân Tích Tài Chính v3.0")
+st.markdown("🔧 Built with Streamlit + Plotly | 📊 Phân Tích Tài Chính v5.0")
