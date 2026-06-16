@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 from io import StringIO
 import numpy as np
+import tempfile
 
 # ============================================================
 # CONFIG
@@ -15,13 +16,12 @@ st.set_page_config(
 )
 
 st.title("📊 Phân Tích Báo Cáo Tài Chính")
-st.markdown("Nhập dữ liệu BCĐKT & BCKQHĐKD → Tự động tính chỉ số tài chính → Biểu đồ trực quan")
+st.markdown("Nhập dữ liệu BCĐKT, BCKQHĐKD, BCLCTT → Tự động tính chỉ số tài chính → Biểu đồ trực quan")
 
 # ============================================================
 # HELPER FUNCTIONS
 # ============================================================
 def find_value(df, keywords, col_name):
-    """Search for a keyword in all string columns, return value from col_name."""
     for col in df.columns:
         try:
             mask = df[col].astype(str).str.lower().str.contains("|".join(keywords), na=False, regex=True)
@@ -42,7 +42,6 @@ def safe_div(a, b):
     return round(a / b, 4)
 
 def parse_uploaded_file(uploaded):
-    """Parse uploaded file (xlsx/xls/csv) into DataFrame."""
     if uploaded is None:
         return None
     try:
@@ -55,10 +54,8 @@ def parse_uploaded_file(uploaded):
         return None
 
 def detect_columns(df, input_mode, col_start_label="Số đầu kỳ", col_end_label="Số cuối kỳ"):
-    """Detect numeric and text columns from DataFrame."""
     numeric_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
     text_cols = [c for c in df.columns if c not in numeric_cols]
-
     if len(numeric_cols) >= 2:
         col_start = numeric_cols[0]
         col_end = numeric_cols[1]
@@ -67,18 +64,15 @@ def detect_columns(df, input_mode, col_start_label="Số đầu kỳ", col_end_l
     else:
         col_start = df.columns[-2] if len(df.columns) >= 2 else df.columns[0]
         col_end = df.columns[-1]
-
     if input_mode == "✏️ Nhập tay":
         col_start = col_start_label
         col_end = col_end_label
         text_col = "Tên chỉ tiêu"
     else:
         text_col = text_cols[0] if text_cols else df.columns[0]
-
     return col_start, col_end, text_col
 
-def extract_items(df, key_items, col_start, col_end, text_col=None):
-    """Extract key items from DataFrame based on keyword search."""
+def extract_items(df, key_items, col_start, col_end):
     extracted = {}
     for label, kws in key_items.items():
         val_start = find_value(df, kws, col_start)
@@ -86,23 +80,26 @@ def extract_items(df, key_items, col_start, col_end, text_col=None):
         extracted[label] = {"Đầu kỳ": val_start, "Cuối kỳ": val_end}
     return extracted
 
-def format_metric(v, k, ratio_labels_vi):
-    """Format a ratio value for display."""
-    label = ratio_labels_vi.get(k, k)
+def fmt_pct(v, k):
+    """Format ratio for display."""
     if v is None:
         return "N/A"
-    if k in ["Đòn bẩy tài chính"]:
+    pct_keys = ["Biên lợi nhuận gộp", "Biên lợi nhuận hoạt động", "Biên lợi nhuận ròng",
+                "ROA", "ROE", "Tỷ lệ nợ/VCSH", "Tỷ lệ nợ/Tổng tài sản",
+                "Tỷ lệ CP vốn hàng bán / DT", "Tỷ lệ CP bán hàng / DT", "Tỷ lệ CP quản lý / DT",
+                "Tăng trưởng doanh thu", "Tăng trưởng LN sau thuế",
+                "Tỷ lệ LCT HĐKD / DT thuần", "Tỷ lệ LCT HĐKD / LN sau thuế",
+                "Tỷ lệ LCT HĐ đầu tư / Tổng LCT", "Tỷ lệ LCT HĐ tài chính / Tổng LCT"]
+    if k == "Đòn bẩy tài chính":
         return f"{v:.2f}x"
-    if k in ["Tỷ lệ nợ/Tổng tài sản", "Tỷ lệ nợ/VCSH", "ROA", "ROE",
-             "Biên lợi nhuận gộp", "Biên lợi nhuận hoạt động", "Biên lợi nhuận ròng",
-             "Tỷ lệ nợ/VCSH (BCĐKT)", "Tỷ lệ nợ/Tổng TS (BCĐKT)", "ROA (kết hợp)", "ROE (kết hợp)"]:
+    if k in pct_keys:
         return f"{v*100:.1f}%"
     return f"{v:.2f}"
 
 # ============================================================
 # TAB SELECTION
 # ============================================================
-tab1, tab2, tab3 = st.tabs(["📋 BCĐKT", "📋 BCKQHĐKD", "🔄 Kết hợp"])
+tab1, tab2, tab3, tab4 = st.tabs(["📋 BCĐKT", "📋 BCKQHĐKD", "💲 BCLCTT", "🔄 Kết hợp"])
 
 # ============================================================
 # TAB 1: BCĐKT
@@ -110,13 +107,11 @@ tab1, tab2, tab3 = st.tabs(["📋 BCĐKT", "📋 BCKQHĐKD", "🔄 Kết hợp"]
 with tab1:
     st.header("Bảng Cân Đối Kế Toán")
     bccl_input_mode = st.radio("Chọn cách nhập dữ liệu BCĐKT:", ["📂 Upload file Excel", "✏️ Nhập tay"], horizontal=True, key="bcdkt_mode")
-
     bcdkt_df = None
 
     if bccl_input_mode == "📂 Upload file Excel":
         uploaded_bcdkt = st.file_uploader("Chọn file BCĐKT (.xlsx / .xls / .csv)", type=["xlsx", "xls", "csv"], key="upload_bcdkt")
         bcdkt_df = parse_uploaded_file(uploaded_bcdkt)
-
     elif bccl_input_mode == "✏️ Nhập tay":
         default_bcdkt = """01,Tổng tài sản,50000,65000
 02,Tài sản ngắn hạn,30000,40000
@@ -143,7 +138,7 @@ with tab1:
         st.subheader("Dữ liệu gốc BCĐKT")
         st.dataframe(bcdkt_df, use_container_width=True)
 
-        col_start_b, col_end_b, text_col_b = detect_columns(bcdkt_df, bccl_input_mode)
+        col_start_b, col_end_b, _ = detect_columns(bcdkt_df, bccl_input_mode)
 
         bcdkt_items = {
             "Tổng tài sản": ["tổng tài sản", "tổng ts"],
@@ -165,14 +160,12 @@ with tab1:
         df_bcdkt_ext = df_bcdkt_ext.dropna(subset=["Đầu kỳ", "Cuối kỳ"], how="all")
 
         if df_bcdkt_ext.empty:
-            st.warning("⚠️ Không tự động trích được chỉ tiêu BCĐKT. Kiểm tra tên chỉ tiêu trong file.")
+            st.warning("⚠️ Không tự động trích được chỉ tiêu BCĐKT.")
         else:
             st.subheader("Trích xuất chỉ tiêu BCĐKT")
             st.dataframe(df_bcdkt_ext.style.format({"Đầu kỳ": "{:,.0f}", "Cuối kỳ": "{:,.0f}"}), use_container_width=True)
 
-            # --- BCĐKT RATIOS ---
             st.subheader("Chỉ số thanh khoản & Đòn bẩy")
-
             ts_nh = bcdkt_extracted.get("Tài sản ngắn hạn", {}).get("Cuối kỳ")
             no_nh = bcdkt_extracted.get("Nợ ngắn hạn", {}).get("Cuối kỳ")
             tien = bcdkt_extracted.get("Tiền và tương đương tiền", {}).get("Cuối kỳ")
@@ -181,7 +174,6 @@ with tab1:
             tong_no = bcdkt_extracted.get("Tổng nợ phải trả", {}).get("Cuối kỳ")
             vcsh = bcdkt_extracted.get("Vốn chủ sở hữu", {}).get("Cuối kỳ")
             no_dh = bcdkt_extracted.get("Nợ dài hạn", {}).get("Cuối kỳ")
-            ts_dh = bcdkt_extracted.get("Tài sản dài hạn", {}).get("Cuối kỳ")
 
             bcdkt_ratios = {
                 "Hệ số thanh toán hiện hành": safe_div(ts_nh, no_nh),
@@ -192,26 +184,15 @@ with tab1:
                 "Đòn bẩy tài chính": safe_div(tong_ts, vcsh),
             }
 
-            bcdkt_ratio_labels = {
-                "Hệ số thanh toán hiện hành": "Thanh khoản hiện hành",
-                "Hệ số thanh toán nhanh": "Thanh khoản nhanh",
-                "Hệ số thanh toán tức thời": "Thanh khoản tức thời",
-                "Tỷ lệ nợ/VCSH": "Nợ / VCSH",
-                "Tỷ lệ nợ/Tổng tài sản": "Nợ / Tổng TS",
-                "Đòn bẩy tài chính": "Tổng TS / VCSH",
-            }
-
             c1, c2, c3 = st.columns(3)
             for i, (k, v) in enumerate(bcdkt_ratios.items()):
-                col = [c1, c2, c3][i % 3]
-                with col:
-                    st.metric(label=bcdkt_ratio_labels.get(k, k), value=format_metric(v, k, bcdkt_ratio_labels))
+                with [c1, c2, c3][i % 3]:
+                    st.metric(label=k, value=fmt_pct(v, k))
 
-            # --- BCĐKT CHARTS ---
             st.subheader("Biểu đồ BCĐKT")
-            chart_c1, chart_c2 = st.columns(2)
+            ch1, ch2 = st.columns(2)
 
-            with chart_c1:
+            with ch1:
                 st.markdown("**🥧 Cơ cấu tài sản**")
                 pie_vals, pie_labels = [], []
                 for label, key in [("TS ngắn hạn", "Tài sản ngắn hạn"), ("TS dài hạn", "Tài sản dài hạn")]:
@@ -227,11 +208,11 @@ with tab1:
                     fig_pie = px.pie(values=pie_vals, names=pie_labels, hole=0.4)
                     st.plotly_chart(fig_pie, use_container_width=True)
 
-            with chart_c2:
+            with ch2:
                 st.markdown("**📈 Nguồn vốn**")
+                tong_no_dk = bcdkt_extracted.get("Tổng nợ phải trả", {}).get("Đầu kỳ")
+                vcsh_dk = bcdkt_extracted.get("Vốn chủ sở hữu", {}).get("Đầu kỳ")
                 if tong_no and vcsh:
-                    tong_no_dk = bcdkt_extracted.get("Tổng nợ phải trả", {}).get("Đầu kỳ")
-                    vcsh_dk = bcdkt_extracted.get("Vốn chủ sở hữu", {}).get("Đầu kỳ")
                     fig_stack = go.Figure()
                     fig_stack.add_trace(go.Bar(x=["Đầu kỳ", "Cuối kỳ"], y=[tong_no_dk or 0, tong_no], name="Nợ phải trả", marker_color="#ef5545"))
                     fig_stack.add_trace(go.Bar(x=["Đầu kỳ", "Cuối kỳ"], y=[vcsh_dk or 0, vcsh], name="VCSH", marker_color="#636efa"))
@@ -244,13 +225,11 @@ with tab1:
 with tab2:
     st.header("Báo Cáo Kết Quả Hoạt Động Kinh Doanh")
     bkq_mode = st.radio("Chọn cách nhập dữ liệu BCKQHĐKD:", ["📂 Upload file Excel", "✏️ Nhập tay"], horizontal=True, key="bkq_mode")
-
     bkq_df = None
 
     if bkq_mode == "📂 Upload file Excel":
         uploaded_bkq = st.file_uploader("Chọn file BCKQHĐKD (.xlsx / .xls / .csv)", type=["xlsx", "xls", "csv"], key="upload_bkq")
         bkq_df = parse_uploaded_file(uploaded_bkq)
-
     elif bkq_mode == "✏️ Nhập tay":
         default_bkq = """01,Doanh thu thuần,120000,150000
 02,Doanh thu hoạt động tài chính,5000,6000
@@ -277,7 +256,7 @@ with tab2:
         st.subheader("Dữ liệu gốc BCKQHĐKD")
         st.dataframe(bkq_df, use_container_width=True)
 
-        col_start_kq, col_end_kq, text_col_kq = detect_columns(bkq_df, bkq_mode)
+        col_start_kq, col_end_kq, _ = detect_columns(bkq_df, bkq_mode)
 
         bkq_items = {
             "Doanh thu thuần": ["doanh thu thuần", "doanh thu thuần về bán hàng", "dt thuần"],
@@ -292,76 +271,51 @@ with tab2:
             "Lợi nhuận thuần từ HĐKD": ["lợi nhuận thuần từ hdkd", "ln thuần từ hdkd", "lợi nhuận từ hdkd"],
             "Lợi nhuận sau thuế": ["lợi nhuận sau thuế", "ln sau thuế", "lợi nhuận kế toán sau thuế"],
             "Thuế TNDN": ["thuế tndn", "thuế thu nhập doanh nghiệp", "thuế tndn hoãn lại"],
-            "Tổng doanh thu": ["tổng doanh thu", "doanh thu"],
         }
 
         bkq_extracted = extract_items(bkq_df, bkq_items, col_start_kq, col_end_kq)
-
-        # Also try "kỳ trước" / "kỳ này" column detection for income statements
         df_bkq_ext = pd.DataFrame(bkq_extracted).T.reset_index().rename(columns={"index": "Chỉ tiêu"})
         df_bkq_ext = df_bkq_ext.dropna(subset=["Đầu kỳ", "Cuối kỳ"], how="all")
 
         if df_bkq_ext.empty:
-            st.warning("⚠️ Không tự động trích được chỉ tiêu BCKQHĐKD. Kiểm tra tên chỉ tiêu trong file.")
+            st.warning("⚠️ Không tự động trích được chỉ tiêu BCKQHĐKD.")
         else:
             st.subheader("Trích xuất chỉ tiêu BCKQHĐKD")
             st.dataframe(df_bkq_ext.style.format({"Đầu kỳ": "{:,.0f}", "Cuối kỳ": "{:,.0f}"}), use_container_width=True)
 
-            # --- BCKQHĐKD RATIOS ---
             st.subheader("Chỉ số sinh lời & Hiệu quả")
-
             dt_thuan = bkq_extracted.get("Doanh thu thuần", {}).get("Cuối kỳ")
             dt_thuan_dk = bkq_extracted.get("Doanh thu thuần", {}).get("Đầu kỳ")
             ln_gop = bkq_extracted.get("Lợi nhuận gộp", {}).get("Cuối kỳ")
-            ln_gop_dk = bkq_extracted.get("Lợi nhuận gộp", {}).get("Đầu kỳ")
-            cp_von = bkq_extracted.get("Chi phí vốn hàng bán", {}).get("Cuối kỳ")
-            cp_ban = bkq_extracted.get("Chi phí bán hàng", {}).get("Cuối kỳ")
-            cp_qly = bkq_extracted.get("Chi phí quản lý doanh nghiệp", {}).get("Cuối kỳ")
-            cp_tc = bkq_extracted.get("Chi phí tài chính", {}).get("Cuối kỳ")
             ln_hdkd = bkq_extracted.get("Lợi nhuận thuần từ HĐKD", {}).get("Cuối kỳ")
             ln_st = bkq_extracted.get("Lợi nhuận sau thuế", {}).get("Cuối kỳ")
             ln_st_dk = bkq_extracted.get("Lợi nhuận sau thuế", {}).get("Đầu kỳ")
-            dt_httc = bkq_extracted.get("Doanh thu hoạt động tài chính", {}).get("Cuối kỳ")
+            cp_von = bkq_extracted.get("Chi phí vốn hàng bán", {}).get("Cuối kỳ")
+            cp_ban = bkq_extracted.get("Chi phí bán hàng", {}).get("Cuối kỳ")
+            cp_qly = bkq_extracted.get("Chi phí quản lý doanh nghiệp", {}).get("Cuối kỳ")
 
             bkq_ratios = {
                 "Biên lợi nhuận gộp": safe_div(ln_gop, dt_thuan),
                 "Biên lợi nhuận hoạt động": safe_div(ln_hdkd, dt_thuan),
                 "Biên lợi nhuận ròng": safe_div(ln_st, dt_thuan),
-                "Tỷ suất doanh thu / Vốn chủ sở hữu": safe_div(dt_thuan, bcdkt_extracted.get("Vốn chủ sở hữu", {}).get("Cuối kỳ")),
-                "Tỷ lệ chi phí vốn hàng bán / Doanh thu": safe_div(cp_von, dt_thuan),
-                "Tỷ lệ chi phí bán hàng / Doanh thu": safe_div(cp_ban, dt_thuan),
-                "Tỷ lệ chi phí quản lý / Doanh thu": safe_div(cp_qly, dt_thuan),
-                "Tăng trưởng doanh thu": safe_div((dt_thuan or 0) - (dt_thuan_dk or 0), dt_thuan_dk),
-                "Tăng trưởng lợi nhuận sau thuế": safe_div((ln_st or 0) - (ln_st_dk or 0), ln_st_dk),
-            }
-
-            bkq_ratio_labels = {
-                "Biên lợi nhuận gộp": "LN gộp / DT thuần",
-                "Biên lợi nhuận hoạt động": "LN HĐKD / DT thuần",
-                "Biên lợi nhuận ròng": "LN sau thuế / DT thuần",
-                "Tỷ suất doanh thu / Vốn chủ sở hữu": "DT thuần / VCSH",
-                "Tỷ lệ chi phí vốn hàng bán / Doanh thu": "CP vốn hàng bán / DT",
-                "Tỷ lệ chi phí bán hàng / Doanh thu": "CP bán hàng / DT",
-                "Tỷ lệ chi phí quản lý / Doanh thu": "CP quản lý / DT",
-                "Tăng trưởng doanh thu": "(DT cuối kỳ - DT đầu kỳ) / DT đầu kỳ",
-                "Tăng trưởng lợi nhuận sau thuế": "(LN cuối - LN đầu) / LN đầu",
+                "Tỷ lệ CP vốn hàng bán / DT": safe_div(cp_von, dt_thuan),
+                "Tỷ lệ CP bán hàng / DT": safe_div(cp_ban, dt_thuan),
+                "Tỷ lệ CP quản lý / DT": safe_div(cp_qly, dt_thuan),
+                "Tăng trưởng doanh thu": safe_div((dt_thuan or 0) - (dt_thuan_dk or 0), dt_thuan_dk) if dt_thuan_dk else None,
+                "Tăng trưởng LN sau thuế": safe_div((ln_st or 0) - (ln_st_dk or 0), ln_st_dk) if ln_st_dk else None,
             }
 
             c1, c2, c3 = st.columns(3)
             for i, (k, v) in enumerate(bkq_ratios.items()):
-                col = [c1, c2, c3][i % 3]
-                with col:
-                    val_str = format_metric(v, k, bkq_ratio_labels)
-                    st.metric(label=bkq_ratio_labels.get(k, k), value=val_str)
+                with [c1, c2, c3][i % 3]:
+                    st.metric(label=k, value=fmt_pct(v, k))
 
-            # --- BCKQHĐKD CHARTS ---
             st.subheader("Biểu đồ BCKQHĐKD")
-            chart_b1, chart_b2 = st.columns(2)
+            ch1, ch2 = st.columns(2)
 
-            with chart_b1:
+            with ch1:
                 st.markdown("**📊 Cơ cấu chi phí**")
-                cp_vals = []
-                cp_labels = []
+                cp_vals, cp_labels = [], []
                 for label, key in [("CP vốn hàng bán", "Chi phí vốn hàng bán"), ("CP bán hàng", "Chi phí bán hàng"),
                                    ("CP quản lý", "Chi phí quản lý doanh nghiệp"), ("CP tài chính", "Chi phí tài chính")]:
                     v = bkq_extracted.get(key, {}).get("Cuối kỳ")
@@ -372,22 +326,21 @@ with tab2:
                     fig_cp = px.pie(values=cp_vals, names=cp_labels, hole=0.4, color_discrete_sequence=px.colors.sequential.Reds)
                     st.plotly_chart(fig_cp, use_container_width=True)
 
-            with chart_b2:
+            with ch2:
                 st.markdown("**📈 So sánh DT & LN**")
                 fig_dtln = go.Figure()
                 if dt_thuan or dt_thuan_dk:
                     fig_dtln.add_trace(go.Bar(x=["Đầu kỳ", "Cuối kỳ"], y=[dt_thuan_dk or 0, dt_thuan or 0], name="Doanh thu thuần", marker_color="#636efa"))
                 if ln_st or ln_st_dk:
                     fig_dtln.add_trace(go.Bar(x=["Đầu kỳ", "Cuối kỳ"], y=[ln_st_dk or 0, ln_st or 0], name="LN sau thuế", marker_color="#2ca02c"))
-                if ln_gop or ln_gop_dk:
+                if ln_gop:
+                    ln_gop_dk = bkq_extracted.get("Lợi nhuận gộp", {}).get("Đầu kỳ")
                     fig_dtln.add_trace(go.Bar(x=["Đầu kỳ", "Cuối kỳ"], y=[ln_gop_dk or 0, ln_gop or 0], name="LN gộp", marker_color="#ff7f0e"))
                 fig_dtln.update_layout(barmode="group", height=350, yaxis_title="Giá trị")
                 st.plotly_chart(fig_dtln, use_container_width=True)
 
-            # Biên lợi nhuận trend
             st.markdown("**📉 Biên lợi nhuận**")
-            margin_vals = []
-            margin_labels = []
+            margin_vals, margin_labels = [], []
             for k in ["Biên lợi nhuận gộp", "Biên lợi nhuận hoạt động", "Biên lợi nhuận ròng"]:
                 v = bkq_ratios.get(k)
                 if v is not None:
@@ -399,19 +352,201 @@ with tab2:
                 st.plotly_chart(fig_margin, use_container_width=True)
 
 # ============================================================
-# TAB 3: COMBINED ANALYSIS
+# TAB 3: BCLCTT
 # ============================================================
 with tab3:
-    st.header("🔄 Phân Tích Kết Hợp BCĐKT + BCKQHĐKD")
-    st.markdown("Kết hợp dữ liệu từ cả 2 báo cáo để tính các chỉ số tài chính tổng hợp.")
+    st.header("Báo Cáo Lưu Chuyển Tiền Tệ")
+    cf_mode = st.radio("Chọn cách nhập dữ liệu BCLCTT:", ["📂 Upload file Excel", "✏️ Nhập tay"], horizontal=True, key="cf_mode")
+    cf_df = None
+
+    if cf_mode == "📂 Upload file Excel":
+        uploaded_cf = st.file_uploader("Chọn file BCLCTT (.xlsx / .xls / .csv)", type=["xlsx", "xls", "csv"], key="upload_cf")
+        cf_df = parse_uploaded_file(uploaded_cf)
+    elif cf_mode == "✏️ Nhập tay":
+        default_cf = """01,Lưu chuyển tiền từ HĐKD,15000,20000
+02,Tiền thu từ bán hàng,80000,100000
+03,Tiền trả cho người bán,55000,65000
+04,Tiền trả cho người lao động,10000,12000
+05,Tiền trả cho các chi phí khác,5000,3000
+10,Lưu chuyển tiền từ HĐ đầu tư,-10000,-8000
+11,Tiền thu thanh lý TSCĐ,2000,3000
+12,Tiền chi mua sắm TSCĐ,-12000,-11000
+20,Lưu chuyển tiền từ HĐ tài chính,5000,4000
+21,Tiền thu từ vay vốn,10000,8000
+22,Tiền trả nợ vay,-5000,-4000
+30,Lưu chuyển tiền thuần,10000,16000
+31,Tiền đầu kỳ,20000,30000
+32,Tiền cuối kỳ,30000,46000"""
+        text_cf = st.text_area("Dữ liệu BCLCTT", value=default_cf, height=300, key="text_cf")
+        try:
+            cf_df = pd.read_csv(StringIO(text_cf), header=None, names=["Mã", "Tên chỉ tiêu", "Số đầu kỳ", "Số cuối kỳ"])
+        except Exception:
+            st.warning("Dữ liệu nhập tay chưa hợp lệ.")
+
+    cf_extracted = {}
+
+    if cf_df is not None and not cf_df.empty:
+        cf_df.columns = [str(c) for c in cf_df.columns]
+        st.subheader("Dữ liệu gốc BCLCTT")
+        st.dataframe(cf_df, use_container_width=True)
+
+        col_start_cf, col_end_cf, _ = detect_columns(cf_df, cf_mode)
+
+        cf_items = {
+            "Lưu chuyển tiền từ HĐKD": ["lưu chuyển tiền từ hđkd", "lưu chuyển tiền từ hoạt động kinh doanh", "lctt từ hđkd", "lưu chuyển từ hđkd", "lct hđkd"],
+            "Tiền thu từ bán hàng": ["tiền thu từ bán hàng", "thu từ bán hàng", "tiền thu bán hàng"],
+            "Tiền trả cho người bán": ["tiền trả cho người bán", "trả cho người bán", "chi cho người bán"],
+            "Tiền trả cho người lao động": ["tiền trả cho người lao động", "trả người lao động", "chi cho người lao động", "trả cho nlđ"],
+            "Tiền trả chi phí khác": ["tiền trả cho các chi phí khác", "chi phí khác", "tiền trả chi phí khác"],
+            "Lưu chuyển tiền từ HĐ đầu tư": ["lưu chuyển tiền từ hđ đầu tư", "lưu chuyển từ hoạt động đầu tư", "lctt từ hđ đầu tư", "lct hđ đầu tư", "lct từ hđ đầu tư"],
+            "Tiền thu thanh lý TSCĐ": ["thanh lý tscđ", "thu thanh lý", "thu bán tscđ", "tiền thu thanh lý tscđ"],
+            "Tiền chi mua sắm TSCĐ": ["mua sắm tscđ", "chi mua sắm tscđ", "tiền chi mua sắm", "đầu tư tscđ", "mua sắm csxd"],
+            "Lưu chuyển tiền từ HĐ tài chính": ["lưu chuyển tiền từ hđ tài chính", "lưu chuyển từ hoạt động tài chính", "lctt từ hđ tài chính", "lct hđ tài chính"],
+            "Tiền thu từ vay vốn": ["tiền thu từ vay vốn", "thu từ vay", "vay vốn"],
+            "Tiền trả nợ vay": ["tiền trả nợ vay", "trả nợ vay", "trả nợ"],
+            "Lưu chuyển tiền thuần": ["lưu chuyển tiền thuần", "lct thuần", "lưu chuyển thuần", "tăng/giảm tiền"],
+            "Tiền đầu kỳ": ["tiền đầu kỳ", "số dư đầu kỳ", "tiền đầu năm"],
+            "Tiền cuối kỳ": ["tiền cuối kỳ", "số dư cuối kỳ", "tiền cuối năm"],
+        }
+
+        cf_extracted = extract_items(cf_df, cf_items, col_start_cf, col_end_cf)
+        df_cf_ext = pd.DataFrame(cf_extracted).T.reset_index().rename(columns={"index": "Chỉ tiêu"})
+        df_cf_ext = df_cf_ext.dropna(subset=["Đầu kỳ", "Cuối kỳ"], how="all")
+
+        if df_cf_ext.empty:
+            st.warning("⚠️ Không tự động trích được chỉ tiêu BCLCTT.")
+        else:
+            st.subheader("Trích xuất chỉ tiêu BCLCTT")
+            st.dataframe(df_cf_ext.style.format({"Đầu kỳ": "{:,.0f}", "Cuối kỳ": "{:,.0f}"}), use_container_width=True)
+
+            # --- BCLCTT ANALYSIS ---
+            st.subheader("Phân tích lưu chuyển tiền tệ")
+
+            lct_hdkd = cf_extracted.get("Lưu chuyển tiền từ HĐKD", {}).get("Cuối kỳ")
+            lct_hdkd_dk = cf_extracted.get("Lưu chuyển tiền từ HĐKD", {}).get("Đầu kỳ")
+            lct_hd_dt = cf_extracted.get("Lưu chuyển tiền từ HĐ đầu tư", {}).get("Cuối kỳ")
+            lct_hd_dt_dk = cf_extracted.get("Lưu chuyển tiền từ HĐ đầu tư", {}).get("Đầu kỳ")
+            lct_hd_tc = cf_extracted.get("Lưu chuyển tiền từ HĐ tài chính", {}).get("Cuối kỳ")
+            lct_hd_tc_dk = cf_extracted.get("Lưu chuyển tiền từ HĐ tài chính", {}).get("Đầu kỳ")
+            lct_thuan = cf_extracted.get("Lưu chuyển tiền thuần", {}).get("Cuối kỳ")
+            lct_thuan_dk = cf_extracted.get("Lưu chuyển tiền thuần", {}).get("Đầu kỳ")
+            tien_dk = cf_extracted.get("Tiền đầu kỳ", {}).get("Cuối kỳ")
+            tien_ck = cf_extracted.get("Tiền cuối kỳ", {}).get("Cuối kỳ")
+
+            # Ratios
+            dt_thuan_cf = bkq_extracted.get("Doanh thu thuần", {}).get("Cuối kỳ") if bkq_extracted else None
+            ln_st_cf = bkq_extracted.get("Lợi nhuận sau thuế", {}).get("Cuối kỳ") if bkq_extracted else None
+
+            cf_ratios = {}
+            cf_ratios["Tỷ lệ LCT HĐKD / DT thuần"] = safe_div(lct_hdkd, dt_thuan_cf)
+            cf_ratios["Tỷ lệ LCT HĐKD / LN sau thuế"] = safe_div(lct_hdkd, ln_st_cf)
+            cf_ratios["Tỷ lệ LCT HĐ đầu tư / Tổng LCT"] = safe_div(lct_hd_dt, lct_thuan) if lct_thuan and lct_thuan != 0 else None
+            cf_ratios["Tỷ lệ LCT HĐ tài chính / Tổng LCT"] = safe_div(lct_hd_tc, lct_thuan) if lct_thuan and lct_thuan != 0 else None
+
+            cf_ratio_labels = {
+                "Tỷ lệ LCT HĐKD / DT thuần": "LCT HĐKD / DT thuần",
+                "Tỷ lệ LCT HĐKD / LN sau thuế": "LCT HĐKD / LN sau thuế",
+                "Tỷ lệ LCT HĐ đầu tư / Tổng LCT": "LCT HĐ đầu tư / LCT thuần",
+                "Tỷ lệ LCT HĐ tài chính / Tổng LCT": "LCT HĐ tài chính / LCT thuần",
+            }
+
+            # Display metrics
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                st.metric("💰 LCT từ HĐKD", value=f"{lct_hdkd:,.0f}" if lct_hdkd else "N/A")
+                st.metric("📈 LCT từ HĐ đầu tư", value=f"{lct_hd_dt:,.0f}" if lct_hd_dt else "N/A")
+            with c2:
+                st.metric("🏦 LCT từ HĐ tài chính", value=f"{lct_hd_tc:,.0f}" if lct_hd_tc else "N/A")
+                st.metric("💵 LCT thuần", value=f"{lct_thuan:,.0f}" if lct_thuan else "N/A")
+            with c3:
+                for k, v in cf_ratios.items():
+                    st.metric(label=cf_ratio_labels.get(k, k), value=fmt_pct(v, k))
+
+            # Cash flow quality assessment
+            if lct_hdkd and ln_st_cf and ln_st_cf != 0:
+                quality = lct_hdkd / ln_st_cf
+                st.subheader("🔍 Chất lượng lợi nhuận")
+                if quality > 1:
+                    st.success(f"✅ Tỷ lệ LCT HĐKD / LN sau thuế = **{quality:.2f}x** — Doanh nghiệp tạo tiền tốt, lợi nhuận chất lượng cao.")
+                elif quality > 0.7:
+                    st.warning(f"⚠️ Tỷ lệ LCT HĐKD / LN sau thuế = **{quality:.2f}x** — Khá, nhưng cần theo dõi chất lượng lợi nhuận.")
+                else:
+                    st.error(f"🔴 Tỷ lệ LCT HĐKD / LN sau thuế = **{quality:.2f}x** — Lợi nhuận chưa chuyển thành tiền, rủi ro chất lượng lợi nhuận.")
+
+            # BCLCTT CHARTS
+            st.subheader("Biểu đồ BCLCTT")
+            ch1, ch2 = st.columns(2)
+
+            with ch1:
+                st.markdown("**📊 Cơ cấu dòng tiền**")
+                cf_pie_vals, cf_pie_labels, cf_pie_colors = [], [], []
+                for label, key, color in [("HĐ kinh doanh", "Lưu chuyển tiền từ HĐKD", "#2ca02c"),
+                                          ("HĐ đầu tư", "Lưu chuyển tiền từ HĐ đầu tư", "#636efa"),
+                                          ("HĐ tài chính", "Lưu chuyển tiền từ HĐ tài chính", "#ff7f0e")]:
+                    v = cf_extracted.get(key, {}).get("Cuối kỳ")
+                    if v is not None:
+                        cf_pie_vals.append(abs(v))
+                        cf_pie_labels.append(f"{label} ({'+' if v >= 0 else '-'})")
+                        cf_pie_colors.append(color)
+                if cf_pie_vals:
+                    fig_cf_pie = px.pie(values=cf_pie_vals, names=cf_pie_labels, hole=0.4, color_discrete_sequence=cf_pie_colors)
+                    st.plotly_chart(fig_cf_pie, use_container_width=True)
+
+            with ch2:
+                st.markdown("**📈 Dòng tiền theo hoạt động**")
+                fig_cf_bar = go.Figure()
+                for label, key in [("HĐ kinh doanh", "Lưu chuyển tiền từ HĐKD"),
+                                    ("HĐ đầu tư", "Lưu chuyển tiền từ HĐ đầu tư"),
+                                    ("HĐ tài chính", "Lưu chuyển tiền từ HĐ tài chính"),
+                                    ("LCT thuần", "Lưu chuyển tiền thuần")]:
+                    dk = cf_extracted.get(key, {}).get("Đầu kỳ")
+                    ck = cf_extracted.get(key, {}).get("Cuối kỳ")
+                    if dk is not None or ck is not None:
+                        fig_cf_bar.add_trace(go.Bar(name=label, x=["Đầu kỳ", "Cuối kỳ"], y=[dk or 0, ck or 0]))
+                fig_cf_bar.update_layout(barmode="group", height=350, yaxis_title="Giá trị")
+                st.plotly_chart(fig_cf_bar, use_container_width=True)
+
+            # Waterfall chart
+            st.markdown("**🌊 Dòng tiền chảy (Waterfall)**")
+            waterfall_labels = []
+            waterfall_vals = []
+            for label, key in [("HĐ kinh doanh", "Lưu chuyển tiền từ HĐKD"),
+                                ("HĐ đầu tư", "Lưu chuyển tiền từ HĐ đầu tư"),
+                                ("HĐ tài chính", "Lưu chuyển tiền từ HĐ tài chính")]:
+                v = cf_extracted.get(key, {}).get("Cuối kỳ")
+                if v is not None:
+                    waterfall_labels.append(label)
+                    waterfall_vals.append(v)
+            waterfall_labels.append("Tiền cuối kỳ")
+            waterfall_vals.append(cf_extracted.get("Tiền cuối kỳ", {}).get("Cuối kỳ") or 0)
+
+            if waterfall_vals:
+                fig_wf = go.Figure()
+                cumulative = 0
+                for i, (lbl, val) in enumerate(zip(waterfall_labels[:-1], waterfall_vals[:-1])):
+                    fig_wf.add_trace(go.Bar(x=[lbl], y=[val], base=[cumulative],
+                                           marker_color="#2ca02c" if val >= 0 else "#ef5545", name=lbl, showlegend=True))
+                    cumulative += val
+                fig_wf.add_trace(go.Bar(x=[waterfall_labels[-1]], y=[waterfall_vals[-1]],
+                                       marker_color="#636efa", name="Tiền cuối kỳ", showlegend=True))
+                fig_wf.update_layout(height=400, yaxis_title="Giá trị")
+                st.plotly_chart(fig_wf, use_container_width=True)
+
+# ============================================================
+# TAB 4: COMBINED ANALYSIS
+# ============================================================
+with tab4:
+    st.header("🔄 Phân Tích Kết Hợp BCĐKT + BCKQHĐKD + BCLCTT")
+    st.markdown("Kết hợp dữ liệu từ 3 báo cáo để tính các chỉ số tài chính tổng hợp.")
 
     has_bcdkt = bool(bcdkt_extracted)
     has_bkq = bool(bkq_extracted)
+    has_cf = bool(cf_extracted)
 
-    if not has_bcdkt and not has_bkq:
-        st.info("👆 Nhập dữ liệu BCĐKT và/hoặc BCKQHĐKD ở các tab trên để phân tích kết hợp.")
+    if not has_bcdkt and not has_bkq and not has_cf:
+        st.info("👆 Nhập dữ liệu BCĐKT, BCKQHĐKD và/hoặc BCLCTT ở các tab trên để phân tích kết hợp.")
     else:
-        # Get values from both
+        # Gather values
         tong_ts = bcdkt_extracted.get("Tổng tài sản", {}).get("Cuối kỳ")
         tong_ts_dk = bcdkt_extracted.get("Tổng tài sản", {}).get("Đầu kỳ")
         vcsh = bcdkt_extracted.get("Vốn chủ sở hữu", {}).get("Cuối kỳ")
@@ -424,27 +559,29 @@ with tab3:
         pt_nh = bcdkt_extracted.get("Phải thu ngắn hạn", {}).get("Cuối kỳ")
         no_dh = bcdkt_extracted.get("Nợ dài hạn", {}).get("Cuối kỳ")
         ts_dh = bcdkt_extracted.get("Tài sản dài hạn", {}).get("Cuối kỳ")
-        ts_nh_dk = bcdkt_extracted.get("Tài sản ngắn hạn", {}).get("Đầu kỳ")
-        no_nh_dk = bcdkt_extracted.get("Nợ ngắn hạn", {}).get("Đầu kỳ")
 
-        dt_thuan = bkq_extracted.get("Doanh thu thuần", {}).get("Cuối kỳ")
-        dt_thuan_dk = bkq_extracted.get("Doanh thu thuần", {}).get("Đầu kỳ")
-        ln_gop = bkq_extracted.get("Lợi nhuận gộp", {}).get("Cuối kỳ")
-        ln_hdkd = bkq_extracted.get("Lợi nhuận thuần từ HĐKD", {}).get("Cuối kỳ")
-        ln_st = bkq_extracted.get("Lợi nhuận sau thuế", {}).get("Cuối kỳ")
-        ln_st_dk = bkq_extracted.get("Lợi nhuận sau thuế", {}).get("Đầu kỳ")
-        cp_von = bkq_extracted.get("Chi phí vốn hàng bán", {}).get("Cuối kỳ")
-        cp_ban = bkq_extracted.get("Chi phí bán hàng", {}).get("Cuối kỳ")
-        cp_qly = bkq_extracted.get("Chi phí quản lý doanh nghiệp", {}).get("Cuối kỳ")
+        dt_thuan = bkq_extracted.get("Doanh thu thuần", {}).get("Cuối kỳ") if has_bkq else None
+        dt_thuan_dk = bkq_extracted.get("Doanh thu thuần", {}).get("Đầu kỳ") if has_bkq else None
+        ln_gop = bkq_extracted.get("Lợi nhuận gộp", {}).get("Cuối kỳ") if has_bkq else None
+        ln_hdkd = bkq_extracted.get("Lợi nhuận thuần từ HĐKD", {}).get("Cuối kỳ") if has_bkq else None
+        ln_st = bkq_extracted.get("Lợi nhuận sau thuế", {}).get("Cuối kỳ") if has_bkq else None
+        ln_st_dk = bkq_extracted.get("Lợi nhuận sau thuế", {}).get("Đầu kỳ") if has_bkq else None
+        cp_von = bkq_extracted.get("Chi phí vốn hàng bán", {}).get("Cuối kỳ") if has_bkq else None
+        cp_ban = bkq_extracted.get("Chi phí bán hàng", {}).get("Cuối kỳ") if has_bkq else None
+        cp_qly = bkq_extracted.get("Chi phí quản lý doanh nghiệp", {}).get("Cuối kỳ") if has_bkq else None
 
-        # AVERAGE ASSETS (for ROA/ROE with income statement)
+        lct_hdkd = cf_extracted.get("Lưu chuyển tiền từ HĐKD", {}).get("Cuối kỳ") if has_cf else None
+        lct_hd_dt = cf_extracted.get("Lưu chuyển tiền từ HĐ đầu tư", {}).get("Cuối kỳ") if has_cf else None
+        lct_hd_tc = cf_extracted.get("Lưu chuyển tiền từ HĐ tài chính", {}).get("Cuối kỳ") if has_cf else None
+        lct_thuan = cf_extracted.get("Lưu chuyển tiền thuần", {}).get("Cuối kỳ") if has_cf else None
+
         ts_tb = safe_div((tong_ts or 0) + (tong_ts_dk or 0), 2) if tong_ts or tong_ts_dk else None
         vcsh_tb = safe_div((vcsh or 0) + (vcsh_dk or 0), 2) if vcsh or vcsh_dk else None
 
         combined_ratios = {}
         combined_labels = {}
 
-        # Thanh khoản (from BCĐKT)
+        # Thanh khoản
         if has_bcdkt:
             combined_ratios["Hệ số thanh toán hiện hành"] = safe_div(ts_nh, no_nh)
             combined_ratios["Hệ số thanh toán nhanh"] = safe_div((ts_nh or 0) - (htk or 0), no_nh)
@@ -460,7 +597,7 @@ with tab3:
             combined_labels["Tỷ lệ nợ/Tổng tài sản"] = "Nợ / Tổng TS"
             combined_labels["Đòn bẩy tài chính"] = "Tổng TS / VCSH"
 
-        # Sinh lời (from BCKQHĐKD + BCĐKT)
+        # Sinh lời
         if has_bkq:
             combined_ratios["Biên lợi nhuận gộp"] = safe_div(ln_gop, dt_thuan)
             combined_ratios["Biên lợi nhuận hoạt động"] = safe_div(ln_hdkd, dt_thuan)
@@ -469,7 +606,7 @@ with tab3:
             combined_labels["Biên lợi nhuận hoạt động"] = "LN HĐKD / DT thuần"
             combined_labels["Biên lợi nhuận ròng"] = "LN sau thuế / DT thuần"
 
-        # Hiệu quả sử dụng vốn (needs both)
+        # Hiệu quả sử dụng vốn
         if has_bcdkt and has_bkq:
             combined_ratios["ROA"] = safe_div(ln_st, ts_tb)
             combined_ratios["ROE"] = safe_div(ln_st, vcsh_tb)
@@ -505,17 +642,29 @@ with tab3:
             combined_ratios["Tăng trưởng LN sau thuế"] = safe_div((ln_st or 0) - (ln_st_dk or 0), ln_st_dk)
             combined_labels["Tăng trưởng LN sau thuế"] = "(LN cuối - LN đầu) / LN đầu"
 
-        # DISPLAY COMBINED RATIOS
+        # Dòng tiền
+        if has_cf:
+            combined_ratios["Tỷ lệ LCT HĐKD / DT thuần"] = safe_div(lct_hdkd, dt_thuan)
+            combined_labels["Tỷ lệ LCT HĐKD / DT thuần"] = "LCT HĐKD / DT thuần"
+            combined_ratios["Tỷ lệ LCT HĐKD / LN sau thuế"] = safe_div(lct_hdkd, ln_st)
+            combined_labels["Tỷ lệ LCT HĐKD / LN sau thuế"] = "LCT HĐKD / LN sau thuế"
+            fcf_val = None
+            if lct_hdkd is not None or lct_hd_dt is not None:
+                fcf_val = (lct_hdkd or 0) + (lct_hd_dt or 0)
+            combined_ratios["Dòng tiền tự do (FCF)"] = fcf_val
+            combined_labels["Dòng tiền tự do (FCF)"] = "LCT HĐKD + LCT HĐ đầu tư"
+
+        # DISPLAY
         if combined_ratios:
             st.subheader("📋 Bảng tổng hợp chỉ số tài chính")
 
-            # Group ratios
             thanh_khoan = [k for k in combined_ratios if k in ["Hệ số thanh toán hiện hành", "Hệ số thanh toán nhanh", "Hệ số thanh toán tức thời"]]
             don_bay = [k for k in combined_ratios if k in ["Tỷ lệ nợ/VCSH", "Tỷ lệ nợ/Tổng tài sản", "Đòn bẩy tài chính"]]
             sinh_loi = [k for k in combined_ratios if k in ["Biên lợi nhuận gộp", "Biên lợi nhuận hoạt động", "Biên lợi nhuận ròng", "ROA", "ROE"]]
             hieu_qua = [k for k in combined_ratios if k in ["Vòng quay tài sản", "Vòng quay vốn chủ sở hữu", "Vòng quay hàng tồn kho", "Vòng quay khoản phải thu"]]
             chi_phi = [k for k in combined_ratios if k.startswith("Tỷ lệ CP")]
             tang_truong = [k for k in combined_ratios if k.startswith("Tăng trưởng")]
+            dong_tien = [k for k in combined_ratios if k in ["Tỷ lệ LCT HĐKD / DT thuần", "Tỷ lệ LCT HĐKD / LN sau thuế", "Dòng tiền tự do (FCF)"]]
 
             groups = [
                 ("💧 Thanh khoản", thanh_khoan),
@@ -524,6 +673,7 @@ with tab3:
                 ("⚡ Hiệu quả", hieu_qua),
                 ("📊 Cơ cấu chi phí", chi_phi),
                 ("📈 Tăng trưởng", tang_truong),
+                ("💵 Dòng tiền", dong_tien),
             ]
 
             for title, keys in groups:
@@ -534,44 +684,39 @@ with tab3:
                 for i, k in enumerate(keys):
                     v = combined_ratios.get(k)
                     with cols[i % 3]:
-                        val_str = format_metric(v, k, combined_labels)
+                        val_str = fmt_pct(v, k)
                         st.metric(label=k, value=val_str)
 
             # COMBINED CHARTS
             st.subheader("📊 Biểu đồ tổng hợp")
+            ch1, ch2 = st.columns(2)
 
-            chart_g1, chart_g2 = st.columns(2)
-
-            with chart_g1:
-                # Du Pont decomposition
+            with ch1:
                 if has_bcdkt and has_bkq:
                     st.markdown("**🔺 Phân tích Du Pont**")
                     margin = combined_ratios.get("Biên lợi nhuận ròng")
                     turnover = combined_ratios.get("Vòng quay tài sản")
                     leverage = combined_ratios.get("Đòn bẩy tài chính")
                     roe = combined_ratios.get("ROE")
-
                     fig_dupont = go.Figure()
                     labels = ["Biên LN ròng", "Vòng quay TS", "Đòn bẩy", "ROE"]
                     vals = [margin or 0, turnover or 0, leverage or 0, roe or 0]
-                    # Normalize for display
                     vals_pct = [f"{(margin or 0)*100:.1f}%", f"{turnover or 0:.2f}x", f"{leverage or 0:.2f}x", f"{(roe or 0)*100:.1f}%"]
                     fig_dupont.add_trace(go.Bar(x=labels, y=vals, text=vals_pct, textposition="auto", marker_color=["#636efa", "#ff7f0e", "#2ca02c", "#ef5545"]))
                     fig_dupont.update_layout(height=350, yaxis_title="Giá trị")
                     st.plotly_chart(fig_dupont, use_container_width=True)
 
-            with chart_g2:
-                # Ratio radar
+            with ch2:
                 st.markdown("**🕸️ Radar chỉ số tổng hợp**")
-                radar_labels = []
-                radar_vals = []
+                radar_labels, radar_vals = [], []
                 for k, v in combined_ratios.items():
                     if v is not None:
                         radar_labels.append(k)
                         if k in ["Biên lợi nhuận gộp", "Biên lợi nhuận hoạt động", "Biên lợi nhuận ròng", "ROA", "ROE",
                                    "Tỷ lệ nợ/Tổng tài sản", "Tỷ lệ nợ/VCSH",
                                    "Tỷ lệ CP vốn hàng bán / DT", "Tỷ lệ CP bán hàng / DT", "Tỷ lệ CP quản lý / DT",
-                                   "Tăng trưởng doanh thu", "Tăng trưởng LN sau thuế"]:
+                                   "Tăng trưởng doanh thu", "Tăng trưởng LN sau thuế",
+                                   "Tỷ lệ LCT HĐKD / DT thuần", "Tỷ lệ LCT HĐKD / LN sau thuế"]:
                             radar_vals.append(min(abs(v), 2.0))
                         elif k == "Đòn bẩy tài chính":
                             radar_vals.append(min(v / 5, 1.5))
@@ -580,54 +725,61 @@ with tab3:
                         else:
                             radar_vals.append(min(abs(v) / 3, 1.5))
                 if radar_labels:
-                    fig_radar = go.Figure(data=go.Scatterpolar(
-                        r=radar_vals, theta=radar_labels, fill="toself", name="Cuối kỳ"
-                    ))
+                    fig_radar = go.Figure(data=go.Scatterpolar(r=radar_vals, theta=radar_labels, fill="toself", name="Cuối kỳ"))
                     fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 1.5])), showlegend=False, height=400)
                     st.plotly_chart(fig_radar, use_container_width=True)
 
             # Growth comparison
-            if has_bkq and (dt_thuan_dk or ln_st_dk):
-                st.markdown("**📈 So sánh Đầu kỳ vs Cuối kỳ**")
-                fig_growth = go.Figure()
-                items_to_chart = {}
+            st.markdown("**📈 So sánh Đầu kỳ vs Cuối kỳ**")
+            fig_growth = go.Figure()
+            items_to_chart = {}
+            if has_bkq:
                 for label, key in [("Doanh thu thuần", "Doanh thu thuần"), ("LN gộp", "Lợi nhuận gộp"), ("LN sau thuế", "Lợi nhuận sau thuế")]:
                     dk = bkq_extracted.get(key, {}).get("Đầu kỳ")
                     ck = bkq_extracted.get(key, {}).get("Cuối kỳ")
                     if dk or ck:
                         items_to_chart[label] = (dk, ck)
-                # Add BCĐKT items if available
-                if has_bcdkt:
-                    for label, key in [("Tổng tài sản", "Tổng tài sản"), ("Vốn CSH", "Vốn chủ sở hữu"), ("Tổng nợ", "Tổng nợ phải trả")]:
-                        dk = bcdkt_extracted.get(key, {}).get("Đầu kỳ")
-                        ck = bcdkt_extracted.get(key, {}).get("Cuối kỳ")
-                        if dk or ck:
-                            items_to_chart[label] = (dk, ck)
+            if has_bcdkt:
+                for label, key in [("Tổng tài sản", "Tổng tài sản"), ("Vốn CSH", "Vốn chủ sở hữu"), ("Tổng nợ", "Tổng nợ phải trả")]:
+                    dk = bcdkt_extracted.get(key, {}).get("Đầu kỳ")
+                    ck = bcdkt_extracted.get(key, {}).get("Cuối kỳ")
+                    if dk or ck:
+                        items_to_chart[label] = (dk, ck)
+            if has_cf:
+                for label, key in [("LCT HĐKD", "Lưu chuyển tiền từ HĐKD"), ("LCT HĐ đầu tư", "Lưu chuyển tiền từ HĐ đầu tư"),
+                                    ("LCT HĐ tài chính", "Lưu chuyển tiền từ HĐ tài chính"), ("LCT thuần", "Lưu chuyển tiền thuần")]:
+                    dk = cf_extracted.get(key, {}).get("Đầu kỳ")
+                    ck = cf_extracted.get(key, {}).get("Cuối kỳ")
+                    if dk or ck:
+                        items_to_chart[label] = (dk, ck)
 
-                for label, (dk, ck) in items_to_chart.items():
-                    fig_growth.add_trace(go.Bar(name=label, x=["Đầu kỳ", "Cuối kỳ"], y=[dk or 0, ck or 0]))
-                fig_growth.update_layout(barmode="group", height=400, yaxis_title="Giá trị")
-                st.plotly_chart(fig_growth, use_container_width=True)
+            for label, (dk, ck) in items_to_chart.items():
+                fig_growth.add_trace(go.Bar(name=label, x=["Đầu kỳ", "Cuối kỳ"], y=[dk or 0, ck or 0]))
+            fig_growth.update_layout(barmode="group", height=400, yaxis_title="Giá trị")
+            st.plotly_chart(fig_growth, use_container_width=True)
 
-        # EXPORT COMBINED
+        # EXPORT
         st.header("📥 Xuất báo cáo tổng hợp")
 
         export_rows = []
-        # BCĐKT items
         if has_bcdkt:
             for label in ["Tổng tài sản", "Tài sản ngắn hạn", "Tài sản dài hạn", "Tiền và tương đương tiền",
                          "Phải thu ngắn hạn", "Hàng tồn kho", "Tổng nợ phải trả", "Nợ ngắn hạn", "Nợ dài hạn",
                          "Vốn chủ sở hữu", "Lợi nhuận chưa phân phối"]:
                 if label in bcdkt_extracted:
                     export_rows.append({"Chỉ tiêu": f"[BCĐKT] {label}", "Đầu kỳ": bcdkt_extracted[label].get("Đầu kỳ"), "Cuối kỳ": bcdkt_extracted[label].get("Cuối kỳ"), "Ghi chú": ""})
-        # BCKQHĐKD items
         if has_bkq:
             for label in ["Doanh thu thuần", "Doanh thu hoạt động tài chính", "Chi phí vốn hàng bán",
                          "Chi phí bán hàng", "Chi phí quản lý doanh nghiệp", "Chi phí tài chính", "Chi phí khác",
                          "Lợi nhuận gộp", "Lợi nhuận thuần từ HĐKD", "Lợi nhuận sau thuế", "Thuế TNDN"]:
                 if label in bkq_extracted:
                     export_rows.append({"Chỉ tiêu": f"[BCKQHĐKD] {label}", "Đầu kỳ": bkq_extracted[label].get("Đầu kỳ"), "Cuối kỳ": bkq_extracted[label].get("Cuối kỳ"), "Ghi chú": ""})
-        # Ratios
+        if has_cf:
+            for label in ["Lưu chuyển tiền từ HĐKD", "Lưu chuyển tiền từ HĐ đầu tư", "Lưu chuyển tiền từ HĐ tài chính",
+                         "Lưu chuyển tiền thuần", "Tiền đầu kỳ", "Tiền cuối kỳ"]:
+                if label in cf_extracted:
+                    export_rows.append({"Chỉ tiêu": f"[BCLCTT] {label}", "Đầu kỳ": cf_extracted[label].get("Đầu kỳ"), "Cuối kỳ": cf_extracted[label].get("Cuối kỳ"), "Ghi chú": ""})
+
         export_rows.append({"Chỉ tiêu": "--- CHỈ SỐ TÀI CHÍNH ---", "Đầu kỳ": "", "Cuối kỳ": "", "Ghi chú": ""})
         for k, v in combined_ratios.items():
             export_rows.append({"Chỉ tiêu": k, "Đầu kỳ": "", "Cuối kỳ": v, "Ghi chú": combined_labels.get(k, "")})
@@ -636,10 +788,9 @@ with tab3:
 
         col_dl1, col_dl2 = st.columns(2)
         with col_dl1:
-            csv = df_export.to_csv(index=False). encode("utf-8-sig")
+            csv = df_export.to_csv(index=False).encode("utf-8-sig")
             st.download_button("📥 Tải CSV tổng hợp", data=csv, file_name="bao_cao_tai_chinh_tong_hop.csv", mime="text/csv")
         with col_dl2:
-            import tempfile
             with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
                 with pd.ExcelWriter(tmp.name, engine="openpyxl") as writer:
                     df_export.to_excel(writer, index=False, sheet_name="Tổng hợp")
@@ -647,6 +798,8 @@ with tab3:
                         pd.DataFrame(bcdkt_extracted).T.reset_index().rename(columns={"index": "Chỉ tiêu"}).to_excel(writer, index=False, sheet_name="BCĐKT")
                     if has_bkq:
                         pd.DataFrame(bkq_extracted).T.reset_index().rename(columns={"index": "Chỉ tiêu"}).to_excel(writer, index=False, sheet_name="BCKQHĐKD")
+                    if has_cf:
+                        pd.DataFrame(cf_extracted).T.reset_index().rename(columns={"index": "Chỉ tiêu"}).to_excel(writer, index=False, sheet_name="BCLCTT")
                 with open(tmp.name, "rb") as f:
                     st.download_button("📥 Tải Excel tổng hợp", data=f.read(), file_name="bao_cao_tai_chinh_tong_hop.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
@@ -654,4 +807,4 @@ with tab3:
 # FOOTER
 # ============================================================
 st.markdown("---")
-st.markdown("🔧 Built with Streamlit + Plotly | 📊 Phân Tích Tài Chính v2.0")
+st.markdown("🔧 Built with Streamlit + Plotly | 📊 Phân Tích Tài Chính v3.0")
