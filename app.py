@@ -318,7 +318,7 @@ pjico_layout = dict(
     legend=dict(bgcolor="white", bordercolor=PJICO_LIGHT_GRAY, borderwidth=1),
 )
 
-pjico_colors = [PJICO_NAVY, PJICO_ORANGE, PJICO_BLUE, PJICO_GOLD, "#2ca02c", "#ef5545"]
+pjico_colors = [PJICO_NAVY, PJICO_ORANGE, PJICO_BLUE, PJICO_GOLD, "#0056A0", "#E87722"]
 
 def apply_pjico(fig, height=350):
     """Apply PJICO theme to a Plotly figure."""
@@ -472,7 +472,7 @@ with tab1:
                     nv_pie_vals.append(vcsh)
                     nv_pie_labels.append("Vốn chủ sở hữu")
                 if nv_pie_vals:
-                    fig_nv_pie = px.pie(values=nv_pie_vals, names=nv_pie_labels, hole=0.4, color_discrete_sequence=["#ef5545", "#636efa"])
+                    fig_nv_pie = px.pie(values=nv_pie_vals, names=nv_pie_labels, hole=0.4, color_discrete_sequence=["#E87722", "#003366"])
                     apply_pjico(fig_nv_pie)
                     st.plotly_chart(fig_nv_pie, use_container_width=True)
 
@@ -486,7 +486,7 @@ with tab1:
                     tk_names.append(k.replace("Hệ số thanh toán ", "").title())
                     tk_vals.append(round(v, 2))
             if tk_vals:
-                fig_tk = go.Figure(data=[go.Bar(x=tk_names, y=tk_vals, marker_color=["#2ca02c", "#ff7f0e", "#636efa"])])
+                fig_tk = go.Figure(data=[go.Bar(x=tk_names, y=tk_vals, marker_color=["#0056A0", "#E87722", "#003366"])])
                 fig_tk.add_hline(y=1.0, line_dash="dash", line_color="red", annotation_text="Mức an toàn = 1.0")
                 fig_tk.update_layout(height=350, yaxis_title="Hệ số")
                 apply_pjico(fig_tk)
@@ -622,9 +622,9 @@ with tab2:
                 cp_on_dt_names = []
                 cp_on_dt_vals = []
                 cp_on_dt_colors = []
-                for label, key, color in [("Chi phí vốn hàng bán", "Tỷ lệ chi phí vốn hàng bán trên doanh thu", "#d62728"),
-                                          ("Chi phí bán hàng", "Tỷ lệ chi phí bán hàng trên doanh thu", "#ff7f0e"),
-                                          ("Chi phí quản lý", "Tỷ lệ chi phí quản lý trên doanh thu", "#636efa")]:
+                for label, key, color in [("Chi phí vốn hàng bán", "Tỷ lệ chi phí vốn hàng bán trên doanh thu", "#E87722"),
+                                          ("Chi phí bán hàng", "Tỷ lệ chi phí bán hàng trên doanh thu", "#E87722"),
+                                          ("Chi phí quản lý", "Tỷ lệ chi phí quản lý trên doanh thu", "#003366")]:
                     v = bkq_ratios.get(key)
                     if v is not None:
                         cp_on_dt_names.append(label)
@@ -649,7 +649,7 @@ with tab2:
                     dt_pie_vals.append(cp_von_val)
                     dt_pie_labels.append("Chi phí vốn hàng bán")
                 if dt_pie_vals:
-                    fig_dt_pie = px.pie(values=dt_pie_vals, names=dt_pie_labels, hole=0.4, color_discrete_sequence=["#2ca02c", "#d62728"])
+                    fig_dt_pie = px.pie(values=dt_pie_vals, names=dt_pie_labels, hole=0.4, color_discrete_sequence=["#0056A0", "#E87722"])
                     apply_pjico(fig_dt_pie)
                     st.plotly_chart(fig_dt_pie, use_container_width=True)
 
@@ -788,9 +788,9 @@ with tab3:
             with ch1:
                 st.markdown("**📊 Cơ cấu dòng tiền**")
                 cf_pie_vals, cf_pie_labels, cf_pie_colors = [], [], []
-                for label, key, color in [("Hoạt động kinh doanh", "Lưu chuyển tiền từ hoạt động kinh doanh", "#2ca02c"),
-                                          ("Hoạt động đầu tư", "Lưu chuyển tiền từ hoạt động đầu tư", "#636efa"),
-                                          ("Hoạt động tài chính", "Lưu chuyển tiền từ hoạt động tài chính", "#ff7f0e")]:
+                for label, key, color in [("Hoạt động kinh doanh", "Lưu chuyển tiền từ hoạt động kinh doanh", "#0056A0"),
+                                          ("Hoạt động đầu tư", "Lưu chuyển tiền từ hoạt động đầu tư", "#003366"),
+                                          ("Hoạt động tài chính", "Lưu chuyển tiền từ hoạt động tài chính", "#E87722")]:
                     v = cf_extracted.get(key, {}).get("Cuối kỳ")
                     if v is not None:
                         cf_pie_vals.append(abs(v))
@@ -835,7 +835,7 @@ with tab3:
                 cumulative = 0
                 for i, (lbl, val) in enumerate(zip(waterfall_labels[:-1], waterfall_vals[:-1])):
                     fig_wf.add_trace(go.Bar(x=[lbl], y=[val], base=[cumulative],
-                                           marker_color="#0056A0" if val >= 0 else "#ef5545", name=lbl, showlegend=True))
+                                           marker_color="#0056A0" if val >= 0 else "#E87722", name=lbl, showlegend=True))
                     cumulative += val
                 fig_wf.add_trace(go.Bar(x=[waterfall_labels[-1]], y=[waterfall_vals[-1]],
                                        marker_color="#003366", name="Tiền cuối kỳ", showlegend=True))
@@ -1059,7 +1059,7 @@ with tab4:
                     labels = ["Biên lợi nhuận ròng", "Vòng quay tài sản", "Đòn bẩy tài chính", "ROE"]
                     vals = [margin or 0, turnover or 0, leverage or 0, roe or 0]
                     vals_pct = [f"{(margin or 0)*100:.1f}%", f"{turnover or 0:.2f}x", f"{leverage or 0:.2f}x", f"{(roe or 0)*100:.1f}%"]
-                    fig_dupont.add_trace(go.Bar(x=labels, y=vals, text=vals_pct, textposition="auto", marker_color=["#636efa", "#ff7f0e", "#2ca02c", "#ef5545"]))
+                    fig_dupont.add_trace(go.Bar(x=labels, y=vals, text=vals_pct, textposition="auto", marker_color=["#003366", "#E87722", "#0056A0", "#E87722"]))
                     fig_dupont.update_layout(height=350, yaxis_title="Giá trị")
                     apply_pjico(fig_dupont)
                     st.plotly_chart(fig_dupont, use_container_width=True)
