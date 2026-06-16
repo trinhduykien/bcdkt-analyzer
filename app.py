@@ -553,13 +553,13 @@ with tab3:
             cf_ratios = {}
             cf_ratio_labels = {}
             cf_ratios["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên doanh thu thuần"] = safe_div(lct_hdkd, dt_thuan_cf)
-            cf_ratio_labels["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên doanh thu thuần"] = "Lưu chuyển tiền HĐKD / Doanh thu thuần"
+            cf_ratio_labels["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên doanh thu thuần"] = "Lưu chuyển tiền từ HĐKD / Doanh thu thuần"
             cf_ratios["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên lợi nhuận sau thuế"] = safe_div(lct_hdkd, ln_st_cf)
-            cf_ratio_labels["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên lợi nhuận sau thuế"] = "Lưu chuyển tiền HĐKD / Lợi nhuận sau thuế"
+            cf_ratio_labels["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên lợi nhuận sau thuế"] = "Lưu chuyển tiền từ HĐKD / Lợi nhuận sau thuế"
             cf_ratios["Tỷ lệ lưu chuyển tiền hoạt động đầu tư trên tổng lưu chuyển"] = safe_div(lct_hd_dt, lct_thuan) if lct_thuan and lct_thuan != 0 else None
-            cf_ratio_labels["Tỷ lệ lưu chuyển tiền hoạt động đầu tư trên tổng lưu chuyển"] = "Lưu chuyển tiền HĐ đầu tư / Lưu chuyển thuần"
+            cf_ratio_labels["Tỷ lệ lưu chuyển tiền hoạt động đầu tư trên tổng lưu chuyển"] = "Lưu chuyển tiền từ HĐ đầu tư / Lưu chuyển thuần"
             cf_ratios["Tỷ lệ lưu chuyển tiền hoạt động tài chính trên tổng lưu chuyển"] = safe_div(lct_hd_tc, lct_thuan) if lct_thuan and lct_thuan != 0 else None
-            cf_ratio_labels["Tỷ lệ lưu chuyển tiền hoạt động tài chính trên tổng lưu chuyển"] = "Lưu chuyển tiền HĐ tài chính / Lưu chuyển thuần"
+            cf_ratio_labels["Tỷ lệ lưu chuyển tiền hoạt động tài chính trên tổng lưu chuyển"] = "Lưu chuyển tiền từ HĐ tài chính / Lưu chuyển thuần"
 
             c1, c2, c3 = st.columns(3)
             with c1:
@@ -577,29 +577,33 @@ with tab3:
                 quality = lct_hdkd / ln_st_cf
                 st.subheader("🔍 Chất lượng lợi nhuận")
                 if quality > 1:
-                    st.success(f"✅ Tỷ lệ Lưu chuyển tiền HĐKD / Lợi nhuận sau thuế = **{quality:.2f}x** — Doanh nghiệp tạo tiền tốt, lợi nhuận chất lượng cao.")
+                    st.success(f"✅ Tỷ lệ Lưu chuyển tiền từ HĐKD / Lợi nhuận sau thuế = **{quality:.2f}x** — Doanh nghiệp tạo tiền tốt, lợi nhuận chất lượng cao.")
                 elif quality > 0.7:
-                    st.warning(f"⚠️ Tỷ lệ Lưu chuyển tiền HĐKD / Lợi nhuận sau thuế = **{quality:.2f}x** — Khá, nhưng cần theo dõi chất lượng lợi nhuận.")
+                    st.warning(f"⚠️ Tỷ lệ Lưu chuyển tiền từ HĐKD / Lợi nhuận sau thuế = **{quality:.2f}x** — Khá, nhưng cần theo dõi chất lượng lợi nhuận.")
                 else:
-                    st.error(f"🔴 Tỷ lệ Lưu chuyển tiền HĐKD / Lợi nhuận sau thuế = **{quality:.2f}x** — Lợi nhuận chưa chuyển thành tiền, rủi ro chất lượng lợi nhuận.")
+                    st.error(f"🔴 Tỷ lệ Lưu chuyển tiền từ HĐKD / Lợi nhuận sau thuế = **{quality:.2f}x** — Lợi nhuận chưa chuyển thành tiền, rủi ro chất lượng lợi nhuận.")
 
             # BCLCTT CHARTS
             st.subheader("Biểu đồ")
             ch1, ch2 = st.columns(2)
 
             with ch1:
-                st.markdown("**📊 Cơ cấu dòng tiền**")
-                cf_pie_vals, cf_pie_labels, cf_pie_colors = [], [], []
+                st.markdown("**📊 Cơ cấu dòng tiền (Cuối kỳ)**")
+                cf_bar_labels = []
+                cf_bar_vals = []
+                cf_bar_colors = []
                 for label, key, color in [("Hoạt động kinh doanh", "Lưu chuyển tiền từ hoạt động kinh doanh", "#2ca02c"),
                                           ("Hoạt động đầu tư", "Lưu chuyển tiền từ hoạt động đầu tư", "#636efa"),
                                           ("Hoạt động tài chính", "Lưu chuyển tiền từ hoạt động tài chính", "#ff7f0e")]:
                     v = cf_extracted.get(key, {}).get("Cuối kỳ")
                     if v is not None:
-                        cf_pie_vals.append(abs(v))
-                        cf_pie_labels.append(f"{label} ({'+' if v >= 0 else '-'})")
-                        cf_pie_colors.append(color)
-                if cf_pie_vals:
-                    fig_cf_pie = px.pie(values=cf_pie_vals, names=cf_pie_labels, hole=0.4, color_discrete_sequence=cf_pie_colors)
+                        cf_bar_labels.append(label)
+                        cf_bar_vals.append(v)
+                        cf_bar_colors.append(color)
+                if cf_bar_vals:
+                    fig_cf_pie = go.Figure(data=[go.Bar(x=cf_bar_labels, y=cf_bar_vals, marker_color=cf_bar_colors,
+                                                        text=[f"{v:,.0f}" for v in cf_bar_vals], textposition="auto")])
+                    fig_cf_pie.update_layout(height=350, yaxis_title="Giá trị")
                     st.plotly_chart(fig_cf_pie, use_container_width=True)
 
             with ch2:
@@ -649,9 +653,9 @@ with tab3:
                 cf_cum_labels = []
                 cf_cum_dk = []
                 cf_cum_ck = []
-                for label, key in [("Từ HĐ kinh doanh", "Lưu chuyển tiền từ hoạt động kinh doanh"),
-                                   ("Từ HĐ đầu tư", "Lưu chuyển tiền từ hoạt động đầu tư"),
-                                   ("Từ HĐ tài chính", "Lưu chuyển tiền từ hoạt động tài chính"),
+                for label, key in [("Từ hoạt động kinh doanh", "Lưu chuyển tiền từ hoạt động kinh doanh"),
+                                   ("Từ hoạt động đầu tư", "Lưu chuyển tiền từ hoạt động đầu tư"),
+                                   ("Từ hoạt động tài chính", "Lưu chuyển tiền từ hoạt động tài chính"),
                                    ("Lưu chuyển thuần", "Lưu chuyển tiền thuần")]:
                     dk_val = cf_extracted.get(key, {}).get("Đầu kỳ")
                     ck_val = cf_extracted.get(key, {}).get("Cuối kỳ")
@@ -667,28 +671,28 @@ with tab3:
                     st.plotly_chart(fig_cf_cum, use_container_width=True)
 
             with ch6:
-                st.markdown("**🥧 Tỷ trọng dòng tiền dương/âm (Cuối kỳ)**")
-                cf_pos_vals = []
-                cf_pos_labels = []
-                cf_neg_vals = []
-                cf_neg_labels = []
-                for label, key in [("HĐ kinh doanh", "Lưu chuyển tiền từ hoạt động kinh doanh"),
-                                   ("HĐ đầu tư", "Lưu chuyển tiền từ hoạt động đầu tư"),
-                                   ("HĐ tài chính", "Lưu chuyển tiền từ hoạt động tài chính")]:
+                st.markdown("**📊 Tỷ trọng dòng tiền dương/âm (Cuối kỳ)**")
+                cf_sign_labels = []
+                cf_sign_pos = []
+                cf_sign_neg = []
+                for label, key in [("Hoạt động kinh doanh", "Lưu chuyển tiền từ hoạt động kinh doanh"),
+                                   ("Hoạt động đầu tư", "Lưu chuyển tiền từ hoạt động đầu tư"),
+                                   ("Hoạt động tài chính", "Lưu chuyển tiền từ hoạt động tài chính")]:
                     v = cf_extracted.get(key, {}).get("Cuối kỳ")
-                    if v is not None:
-                        if v >= 0:
-                            cf_pos_vals.append(v)
-                            cf_pos_labels.append(label)
-                        else:
-                            cf_neg_vals.append(abs(v))
-                            cf_neg_labels.append(label)
+                    cf_sign_labels.append(label)
+                    if v is not None and v >= 0:
+                        cf_sign_pos.append(v)
+                        cf_sign_neg.append(0)
+                    elif v is not None and v < 0:
+                        cf_sign_pos.append(0)
+                        cf_sign_neg.append(abs(v))
+                    else:
+                        cf_sign_pos.append(None)
+                        cf_sign_neg.append(None)
                 fig_cf_sign = go.Figure()
-                if cf_pos_vals:
-                    fig_cf_sign.add_trace(go.Bar(name="Dòng tiền dương (+)", x=cf_pos_labels, y=cf_pos_vals, marker_color="#2ca02c"))
-                if cf_neg_vals:
-                    fig_cf_sign.add_trace(go.Bar(name="Dòng tiền âm (-)", x=cf_neg_labels, y=cf_neg_vals, marker_color="#ef5545"))
-                fig_cf_sign.update_layout(barmode="group", height=350, yaxis_title="Giá trị", title="")
+                fig_cf_sign.add_trace(go.Bar(name="Dòng tiền dương (+)", x=cf_sign_labels, y=cf_sign_pos, marker_color="#2ca02c"))
+                fig_cf_sign.add_trace(go.Bar(name="Dòng tiền âm (-)", x=cf_sign_labels, y=cf_sign_neg, marker_color="#ef5545"))
+                fig_cf_sign.update_layout(barmode="group", height=350, yaxis_title="Giá trị")
                 st.plotly_chart(fig_cf_sign, use_container_width=True)
 
 # ============================================================
@@ -799,14 +803,14 @@ with tab4:
         # Dòng tiền
         if has_cf:
             combined_ratios["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên doanh thu thuần"] = safe_div(lct_hdkd, dt_thuan)
-            combined_labels["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên doanh thu thuần"] = "Lưu chuyển tiền HĐKD / Doanh thu thuần"
+            combined_labels["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên doanh thu thuần"] = "Lưu chuyển tiền từ HĐKD / Doanh thu thuần"
             combined_ratios["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên lợi nhuận sau thuế"] = safe_div(lct_hdkd, ln_st)
-            combined_labels["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên lợi nhuận sau thuế"] = "Lưu chuyển tiền HĐKD / Lợi nhuận sau thuế"
+            combined_labels["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên lợi nhuận sau thuế"] = "Lưu chuyển tiền từ HĐKD / Lợi nhuận sau thuế"
             fcf_val = None
             if lct_hdkd is not None or lct_hd_dt is not None:
                 fcf_val = (lct_hdkd or 0) + (lct_hd_dt or 0)
             combined_ratios["Dòng tiền tự do"] = fcf_val
-            combined_labels["Dòng tiền tự do"] = "Lưu chuyển tiền HĐKD + Lưu chuyển tiền HĐ đầu tư"
+            combined_labels["Dòng tiền tự do"] = "Lưu chuyển tiền từ HĐKD + Lưu chuyển tiền từ HĐ đầu tư"
 
         # DISPLAY
         if combined_ratios:
@@ -900,7 +904,7 @@ with tab4:
                     if dk or ck:
                         items_to_chart[label] = (dk, ck)
             if has_cf:
-                for label, key in [("Lưu chuyển tiền HĐKD", "Lưu chuyển tiền từ hoạt động kinh doanh"),
+                for label, key in [("Lưu chuyển tiền từ HĐKD", "Lưu chuyển tiền từ hoạt động kinh doanh"),
                                     ("Lưu chuyển tiền HĐ đầu tư", "Lưu chuyển tiền từ hoạt động đầu tư"),
                                     ("Lưu chuyển tiền HĐ tài chính", "Lưu chuyển tiền từ hoạt động tài chính"),
                                     ("Lưu chuyển tiền thuần", "Lưu chuyển tiền thuần")]:
