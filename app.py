@@ -7,16 +7,187 @@ import numpy as np
 import tempfile
 
 # ============================================================
-# CONFIG
+# CONFIG - PJICO BRAND THEME
 # ============================================================
+# PJICO brand colors
+PJICO_NAVY = "#003366"
+PJICO_BLUE = "#0056A0"
+PJICO_LIGHT_BLUE = "#E8F0FE"
+PJICO_ORANGE = "#E87722"
+PJICO_GOLD = "#D4A843"
+PJICO_WHITE = "#FFFFFF"
+PJICO_DARK = "#1A1A2E"
+PJICO_GRAY = "#6B7280"
+PJICO_LIGHT_GRAY = "#F3F4F6"
+
 st.set_page_config(
-    page_title="Phân Tích Tài Chính",
-    page_icon="📊",
+    page_title="Phân Tích Tài Chính | PJICO Style",
+    page_icon="🏢",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 
-st.title("📊 Phân Tích Báo Cáo Tài Chính")
-st.markdown("Nhập dữ liệu Bảng cân đối kế toán, Báo cáo kết quả hoạt động kinh doanh, Báo cáo lưu chuyển tiền tệ → Tự động tính chỉ số tài chính → Biểu đồ trực quan")
+# Inject PJICO-style CSS
+st.markdown(f"""
+<style>
+    /* Global */
+    .stApp {{
+        background: linear-gradient(180deg, {PJICO_LIGHT_BLUE} 0%, {PJICO_WHITE} 15%);
+    }}
+    /* Header bar */
+    [data-testid="stHeader"] {{
+        background: {PJICO_NAVY};
+    }}
+    /* Tabs */
+    .stTabs [data-baseline="visible"] {{
+        border-color: {PJICO_ORANGE};
+    }}
+    .stTabs [role="tab"] {{
+        color: {PJICO_GRAY};
+        font-weight: 600;
+        font-size: 14px;
+    }}
+    .stTabs [role="tab"][aria-selected="true"] {{
+        color: {PJICO_NAVY};
+        border-bottom: 3px solid {PJICO_ORANGE};
+    }}
+    .stTabs [role="tab"]:hover {{
+        color: {PJICO_BLUE};
+    }}
+    /* Metric cards */
+    [data-testid="stMetricValue"] {{
+        color: {PJICO_NAVY};
+        font-weight: 700;
+        font-size: 20px;
+    }}
+    [data-testid="stMetricLabel"] {{
+        color: {PJICO_GRAY};
+        font-weight: 500;
+        font-size: 13px;
+    }}
+    [data-testid="stMetricDelta"] {{
+        font-size: 12px;
+    }}
+    /* Section headers */
+    h1 {{
+        color: {PJICO_NAVY};
+        font-weight: 800;
+        border-bottom: 3px solid {PJICO_ORANGE};
+        padding-bottom: 8px;
+    }}
+    h2 {{
+        color: {PJICO_NAVY};
+        font-weight: 700;
+    }}
+    h3 {{
+        color: {PJICO_BLUE};
+        font-weight: 600;
+    }}
+    /* Subheader / st.subheader */
+    .st-subheader {{
+        color: {PJICO_BLUE};
+    }}
+    /* Sidebar */
+    [data-testid="stSidebar"] {{
+        background: {PJICO_NAVY};
+    }}
+    [data-testid="stSidebar"] .stMarkdown {{
+        color: {PJICO_WHITE};
+    }}
+    /* Buttons */
+    .stButton > button, .stDownloadButton > button {{
+        background: {PJICO_NAVY};
+        color: {PJICO_WHITE};
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.2s;
+    }}
+    .stButton > button:hover, .stDownloadButton > button:hover {{
+        background: {PJICO_ORANGE};
+        color: {PJICO_WHITE};
+    }}
+    /* Radio */
+    .stRadio [role="radio"] [aria-checked="true"] {{
+        color: {PJICO_NAVY};
+    }}
+    /* Info / Success boxes */
+    .stSuccess {{
+        border-left: 4px solid {PJICO_ORANGE};
+        background: {PJICO_LIGHT_BLUE};
+    }}
+    .stInfo {{
+        border-left: 4px solid {PJICO_BLUE};
+    }}
+    .stWarning {{
+        border-left: 4px solid {PJICO_GOLD};
+    }}
+    /* Dataframe */
+    .stDataFrame {{
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+    }}
+    /* File uploader */
+    .stFileUploader {{
+        border: 2px dashed {PJICO_BLUE};
+        border-radius: 8px;
+    }}
+    /* Columns */
+    [data-testid="stColumn"] {{
+        background: {PJICO_WHITE};
+        border-radius: 8px;
+        padding: 4px;
+    }}
+</style>
+""", unsafe_allow_html=True)
+
+# PJICO-style branded header
+st.markdown(f"""
+<div style="
+    background: {PJICO_NAVY};
+    padding: 18px 30px;
+    border-radius: 0 0 16px 16px;
+    margin: -10px -10px 20px -10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+">
+    <div style="display: flex; align-items: center; gap: 16px;">
+        <div style="
+            background: {PJICO_ORANGE};
+            width: 48px; height: 48px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; font-weight: 900; color: white;
+        ">🏢</div>
+        <div>
+            <div style="color: {PJICO_WHITE}; font-size: 22px; font-weight: 800; letter-spacing: 0.5px;">
+                PHÂN TÍCH TÀI CHÍNH
+            </div>
+            <div style="color: {PJICO_ORANGE}; font-size: 13px; font-weight: 500; letter-spacing: 1px;">
+                HỆ THỐNG PHÂN TÍCH BÁO CÁO TÀI CHÍNH DOANH NGHIỆP
+            </div>
+        </div>
+    </div>
+    <div style="color: {PJICO_LIGHT_GRAY}; font-size: 12px; text-align: right;">
+        <div>Phiên bản 3.3</div>
+        <div style="color: {PJICO_ORANGE};">● ● ●</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown(f"""
+<div style="
+    background: {PJICO_LIGHT_GRAY};
+    padding: 10px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    color: {PJICO_NAVY};
+    font-size: 14px;
+">
+    📊 Nhập dữ liệu <b>Bảng cân đối kế toán</b>, <b>Báo cáo kết quả hoạt động kinh doanh</b>, <b>Báo cáo lưu chuyển tiền tệ</b> → Tự động tính chỉ số tài chính → Biểu đồ trực quan
+</div>
+""", unsafe_allow_html=True)
 
 # ============================================================
 # HELPER FUNCTIONS
@@ -135,7 +306,24 @@ def fmt_pct(v, k):
     return f"{v:.2f}"
 
 # ============================================================
-# TAB SELECTION
+# PJICO PLOTLY TEMPLATE
+# ============================================================
+pjico_layout = dict(
+    font=dict(family="Segoe UI, Arial, sans-serif", color=PJICO_NAVY),
+    paper_bgcolor="white",
+    plot_bgcolor="white",
+    title_font=dict(color=PJICO_NAVY, size=14),
+    xaxis=dict(gridcolor=PJICO_LIGHT_GRAY, zerolinecolor=PJICO_LIGHT_GRAY),
+    yaxis=dict(gridcolor=PJICO_LIGHT_GRAY, zerolinecolor=PJICO_LIGHT_GRAY),
+    legend=dict(bgcolor="white", bordercolor=PJICO_LIGHT_GRAY, borderwidth=1),
+)
+
+pjico_colors = [PJICO_NAVY, PJICO_ORANGE, PJICO_BLUE, PJICO_GOLD, "#2ca02c", "#ef5545"]
+
+def apply_pjico(fig, height=350):
+    """Apply PJICO theme to a Plotly figure."""
+    fig.update_layout(**pjico_layout, height=height)
+    return fig
 # ============================================================
 tab1, tab2, tab3, tab4 = st.tabs(["📋 Bảng cân đối kế toán", "📋 Báo cáo kết quả KDKD", "💲 Báo cáo lưu chuyển tiền tệ", "🔄 Kết hợp"])
 
@@ -244,6 +432,7 @@ with tab1:
                     pie_labels.append("Khác")
                 if pie_vals:
                     fig_pie = px.pie(values=pie_vals, names=pie_labels, hole=0.4)
+                    apply_pjico(fig_pie)
                     st.plotly_chart(fig_pie, use_container_width=True)
 
             with ch2:
@@ -252,9 +441,10 @@ with tab1:
                 vcsh_dk = bcdkt_extracted.get("Vốn chủ sở hữu", {}).get("Đầu kỳ")
                 if tong_no and vcsh:
                     fig_stack = go.Figure()
-                    fig_stack.add_trace(go.Bar(x=["Đầu kỳ", "Cuối kỳ"], y=[tong_no_dk or 0, tong_no], name="Nợ phải trả", marker_color="#ef5545"))
-                    fig_stack.add_trace(go.Bar(x=["Đầu kỳ", "Cuối kỳ"], y=[vcsh_dk or 0, vcsh], name="Vốn chủ sở hữu", marker_color="#636efa"))
+                    fig_stack.add_trace(go.Bar(x=["Đầu kỳ", "Cuối kỳ"], y=[tong_no_dk or 0, tong_no], name="Nợ phải trả", marker_color="#E87722"))
+                    fig_stack.add_trace(go.Bar(x=["Đầu kỳ", "Cuối kỳ"], y=[vcsh_dk or 0, vcsh], name="Vốn chủ sở hữu", marker_color="#003366"))
                     fig_stack.update_layout(barmode="stack", height=350, yaxis_title="Giá trị")
+                    apply_pjico(fig_stack)
                     st.plotly_chart(fig_stack, use_container_width=True)
 
             # Additional charts for BCĐKT
@@ -269,6 +459,7 @@ with tab1:
                         ck = bcdkt_extracted[label].get("Cuối kỳ")
                         fig_bcdkt_bar.add_trace(go.Bar(name=label, x=["Đầu kỳ", "Cuối kỳ"], y=[dk or 0, ck or 0]))
                 fig_bcdkt_bar.update_layout(barmode="group", height=350, yaxis_title="Giá trị")
+                apply_pjico(fig_bcdkt_bar)
                 st.plotly_chart(fig_bcdkt_bar, use_container_width=True)
 
             with ch4:
@@ -282,6 +473,7 @@ with tab1:
                     nv_pie_labels.append("Vốn chủ sở hữu")
                 if nv_pie_vals:
                     fig_nv_pie = px.pie(values=nv_pie_vals, names=nv_pie_labels, hole=0.4, color_discrete_sequence=["#ef5545", "#636efa"])
+                    apply_pjico(fig_nv_pie)
                     st.plotly_chart(fig_nv_pie, use_container_width=True)
 
             # Thanh khoản gauge
@@ -297,6 +489,7 @@ with tab1:
                 fig_tk = go.Figure(data=[go.Bar(x=tk_names, y=tk_vals, marker_color=["#2ca02c", "#ff7f0e", "#636efa"])])
                 fig_tk.add_hline(y=1.0, line_dash="dash", line_color="red", annotation_text="Mức an toàn = 1.0")
                 fig_tk.update_layout(height=350, yaxis_title="Hệ số")
+                apply_pjico(fig_tk)
                 st.plotly_chart(fig_tk, use_container_width=True)
 
 # ============================================================
@@ -403,7 +596,8 @@ with tab2:
                         cp_vals.append(v)
                         cp_labels.append(label)
                 if cp_vals:
-                    fig_cp = px.pie(values=cp_vals, names=cp_labels, hole=0.4, color_discrete_sequence=px.colors.sequential.Reds)
+                    fig_cp = px.pie(values=cp_vals, names=cp_labels, hole=0.4, color_discrete_sequence=["#E87722", "#003366", "#D4A843", "#0056A0", "#6B7280"])
+                    apply_pjico(fig_cp)
                     st.plotly_chart(fig_cp, use_container_width=True)
 
             with ch2:
@@ -411,12 +605,13 @@ with tab2:
                 fig_dtln = go.Figure()
                 ln_gop_dk = bkq_extracted.get("Lợi nhuận gộp", {}).get("Đầu kỳ")
                 if dt_thuan or dt_thuan_dk:
-                    fig_dtln.add_trace(go.Bar(x=["Đầu kỳ", "Cuối kỳ"], y=[dt_thuan_dk or 0, dt_thuan or 0], name="Doanh thu thuần", marker_color="#636efa"))
+                    fig_dtln.add_trace(go.Bar(x=["Đầu kỳ", "Cuối kỳ"], y=[dt_thuan_dk or 0, dt_thuan or 0], name="Doanh thu thuần", marker_color="#003366"))
                 if ln_st or ln_st_dk:
-                    fig_dtln.add_trace(go.Bar(x=["Đầu kỳ", "Cuối kỳ"], y=[ln_st_dk or 0, ln_st or 0], name="Lợi nhuận sau thuế", marker_color="#2ca02c"))
+                    fig_dtln.add_trace(go.Bar(x=["Đầu kỳ", "Cuối kỳ"], y=[ln_st_dk or 0, ln_st or 0], name="Lợi nhuận sau thuế", marker_color="#0056A0"))
                 if ln_gop or ln_gop_dk:
-                    fig_dtln.add_trace(go.Bar(x=["Đầu kỳ", "Cuối kỳ"], y=[ln_gop_dk or 0, ln_gop or 0], name="Lợi nhuận gộp", marker_color="#ff7f0e"))
+                    fig_dtln.add_trace(go.Bar(x=["Đầu kỳ", "Cuối kỳ"], y=[ln_gop_dk or 0, ln_gop or 0], name="Lợi nhuận gộp", marker_color="#E87722"))
                 fig_dtln.update_layout(barmode="group", height=350, yaxis_title="Giá trị")
+                apply_pjico(fig_dtln)
                 st.plotly_chart(fig_dtln, use_container_width=True)
 
             # Additional chart: CP/DT breakdown bar
@@ -438,6 +633,7 @@ with tab2:
                 if cp_on_dt_vals:
                     fig_cpdt = go.Figure(data=[go.Bar(x=cp_on_dt_names, y=cp_on_dt_vals, marker_color=cp_on_dt_colors)])
                     fig_cpdt.update_layout(height=350, yaxis_title="% trên doanh thu", yaxis=dict(ticksuffix="%"))
+                    apply_pjico(fig_cpdt)
                     st.plotly_chart(fig_cpdt, use_container_width=True)
 
             with ch4:
@@ -454,6 +650,7 @@ with tab2:
                     dt_pie_labels.append("Chi phí vốn hàng bán")
                 if dt_pie_vals:
                     fig_dt_pie = px.pie(values=dt_pie_vals, names=dt_pie_labels, hole=0.4, color_discrete_sequence=["#2ca02c", "#d62728"])
+                    apply_pjico(fig_dt_pie)
                     st.plotly_chart(fig_dt_pie, use_container_width=True)
 
             # Tăng trưởng comparison
@@ -468,6 +665,7 @@ with tab2:
                     if dk or ck:
                         fig_growth_bkq.add_trace(go.Bar(name=label, x=["Đầu kỳ", "Cuối kỳ"], y=[dk or 0, ck or 0]))
                 fig_growth_bkq.update_layout(barmode="group", height=350, yaxis_title="Giá trị")
+                apply_pjico(fig_growth_bkq)
                 st.plotly_chart(fig_growth_bkq, use_container_width=True)
 
 # ============================================================
@@ -600,6 +798,7 @@ with tab3:
                         cf_pie_colors.append(color)
                 if cf_pie_vals:
                     fig_cf_pie = px.pie(values=cf_pie_vals, names=cf_pie_labels, hole=0.4, color_discrete_sequence=cf_pie_colors)
+                    apply_pjico(fig_cf_pie)
                     st.plotly_chart(fig_cf_pie, use_container_width=True)
 
             with ch2:
@@ -614,6 +813,7 @@ with tab3:
                     if dk is not None or ck is not None:
                         fig_cf_bar.add_trace(go.Bar(name=label, x=["Đầu kỳ", "Cuối kỳ"], y=[dk or 0, ck or 0]))
                 fig_cf_bar.update_layout(barmode="group", height=350, yaxis_title="Giá trị")
+                apply_pjico(fig_cf_bar)
                 st.plotly_chart(fig_cf_bar, use_container_width=True)
 
             # Waterfall
@@ -635,11 +835,12 @@ with tab3:
                 cumulative = 0
                 for i, (lbl, val) in enumerate(zip(waterfall_labels[:-1], waterfall_vals[:-1])):
                     fig_wf.add_trace(go.Bar(x=[lbl], y=[val], base=[cumulative],
-                                           marker_color="#2ca02c" if val >= 0 else "#ef5545", name=lbl, showlegend=True))
+                                           marker_color="#0056A0" if val >= 0 else "#ef5545", name=lbl, showlegend=True))
                     cumulative += val
                 fig_wf.add_trace(go.Bar(x=[waterfall_labels[-1]], y=[waterfall_vals[-1]],
-                                       marker_color="#636efa", name="Tiền cuối kỳ", showlegend=True))
+                                       marker_color="#003366", name="Tiền cuối kỳ", showlegend=True))
                 fig_wf.update_layout(height=400, yaxis_title="Giá trị")
+                apply_pjico(fig_wf)
                 st.plotly_chart(fig_wf, use_container_width=True)
 
             # Additional: Cumulative cash flow bar
@@ -661,9 +862,10 @@ with tab3:
                         cf_cum_ck.append(ck_val or 0)
                 if cf_cum_labels:
                     fig_cf_cum = go.Figure()
-                    fig_cf_cum.add_trace(go.Bar(name="Đầu kỳ", x=cf_cum_labels, y=cf_cum_dk, marker_color="#636efa"))
-                    fig_cf_cum.add_trace(go.Bar(name="Cuối kỳ", x=cf_cum_labels, y=cf_cum_ck, marker_color="#2ca02c"))
+                    fig_cf_cum.add_trace(go.Bar(name="Đầu kỳ", x=cf_cum_labels, y=cf_cum_dk, marker_color="#003366"))
+                    fig_cf_cum.add_trace(go.Bar(name="Cuối kỳ", x=cf_cum_labels, y=cf_cum_ck, marker_color="#0056A0"))
                     fig_cf_cum.update_layout(barmode="group", height=350, yaxis_title="Giá trị")
+                    apply_pjico(fig_cf_cum)
                     st.plotly_chart(fig_cf_cum, use_container_width=True)
 
             with ch6:
@@ -685,10 +887,11 @@ with tab3:
                             cf_neg_labels.append(label)
                 fig_cf_sign = go.Figure()
                 if cf_pos_vals:
-                    fig_cf_sign.add_trace(go.Bar(name="Dòng tiền dương (+)", x=cf_pos_labels, y=cf_pos_vals, marker_color="#2ca02c"))
+                    fig_cf_sign.add_trace(go.Bar(name="Dòng tiền dương (+)", x=cf_pos_labels, y=cf_pos_vals, marker_color="#0056A0"))
                 if cf_neg_vals:
-                    fig_cf_sign.add_trace(go.Bar(name="Dòng tiền âm (-)", x=cf_neg_labels, y=cf_neg_vals, marker_color="#ef5545"))
+                    fig_cf_sign.add_trace(go.Bar(name="Dòng tiền âm (-)", x=cf_neg_labels, y=cf_neg_vals, marker_color="#E87722"))
                 fig_cf_sign.update_layout(barmode="group", height=350, yaxis_title="Giá trị", title="")
+                apply_pjico(fig_cf_sign)
                 st.plotly_chart(fig_cf_sign, use_container_width=True)
 
 # ============================================================
@@ -858,6 +1061,7 @@ with tab4:
                     vals_pct = [f"{(margin or 0)*100:.1f}%", f"{turnover or 0:.2f}x", f"{leverage or 0:.2f}x", f"{(roe or 0)*100:.1f}%"]
                     fig_dupont.add_trace(go.Bar(x=labels, y=vals, text=vals_pct, textposition="auto", marker_color=["#636efa", "#ff7f0e", "#2ca02c", "#ef5545"]))
                     fig_dupont.update_layout(height=350, yaxis_title="Giá trị")
+                    apply_pjico(fig_dupont)
                     st.plotly_chart(fig_dupont, use_container_width=True)
 
             with ch2:
@@ -881,6 +1085,7 @@ with tab4:
                 if radar_labels:
                     fig_radar = go.Figure(data=go.Scatterpolar(r=radar_vals, theta=radar_labels, fill="toself", name="Cuối kỳ"))
                     fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 1.5])), showlegend=False, height=400)
+                    apply_pjico(fig_radar)
                     st.plotly_chart(fig_radar, use_container_width=True)
 
             # Growth comparison
@@ -912,6 +1117,7 @@ with tab4:
             for label, (dk, ck) in items_to_chart.items():
                 fig_growth.add_trace(go.Bar(name=label, x=["Đầu kỳ", "Cuối kỳ"], y=[dk or 0, ck or 0]))
             fig_growth.update_layout(barmode="group", height=400, yaxis_title="Giá trị")
+            apply_pjico(fig_growth)
             st.plotly_chart(fig_growth, use_container_width=True)
 
         # EXPORT
@@ -962,5 +1168,19 @@ with tab4:
 # ============================================================
 # FOOTER
 # ============================================================
-st.markdown("---")
-st.markdown("🔧 Built with Streamlit + Plotly | 📊 Phân Tích Tài Chính v3.0")
+st.markdown(f"""
+<div style="
+    background: {PJICO_NAVY};
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-top: 30px;
+    color: {PJICO_WHITE};
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+">
+    <div>🏢 Hệ thống Phân Tích Tài Chính | Phiên bản 3.3</div>
+    <div style="color: {PJICO_ORANGE};">Powered by Streamlit + Plotly</div>
+</div>
+""", unsafe_allow_html=True)
