@@ -80,6 +80,41 @@ def extract_items(df, key_items, col_start, col_end):
         extracted[label] = {"Đầu kỳ": val_start, "Cuối kỳ": val_end}
     return extracted
 
+# ============================================================
+# FORMULA DICTIONARY - hover tooltips for every ratio
+# ============================================================
+FORMULAS = {
+    # BCĐKT
+    "Hệ số thanh toán hiện hành": "Tài sản ngắn hạn / Nợ ngắn hạn",
+    "Hệ số thanh toán nhanh": "(Tài sản ngắn hạn - Hàng tồn kho) / Nợ ngắn hạn",
+    "Hệ số thanh toán tức thời": "Tiền và tương đương tiền / Nợ ngắn hạn",
+    "Tỷ lệ nợ trên vốn chủ sở hữu": "Tổng nợ phải trả / Vốn chủ sở hữu",
+    "Tỷ lệ nợ trên tổng tài sản": "Tổng nợ phải trả / Tổng tài sản",
+    "Đòn bẩy tài chính": "Tổng tài sản / Vốn chủ sở hữu",
+    # BCKQHĐKD
+    "Biên lợi nhuận gộp": "Lợi nhuận gộp / Doanh thu thuần × 100%",
+    "Biên lợi nhuận hoạt động": "Lợi nhuận thuần từ HĐKD / Doanh thu thuần × 100%",
+    "Biên lợi nhuận ròng": "Lợi nhuận sau thuế / Doanh thu thuần × 100%",
+    "Tỷ lệ chi phí vốn hàng bán trên doanh thu": "Chi phí vốn hàng bán / Doanh thu thuần × 100%",
+    "Tỷ lệ chi phí bán hàng trên doanh thu": "Chi phí bán hàng / Doanh thu thuần × 100%",
+    "Tỷ lệ chi phí quản lý trên doanh thu": "Chi phí quản lý doanh nghiệp / Doanh thu thuần × 100%",
+    "Tăng trưởng doanh thu": "(Doanh thu cuối kỳ - Doanh thu đầu kỳ) / Doanh thu đầu kỳ × 100%",
+    "Tăng trưởng lợi nhuận sau thuế": "(Lợi nhuận cuối kỳ - Lợi nhuận đầu kỳ) / Lợi nhuận đầu kỳ × 100%",
+    # BCLCTT
+    "Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên doanh thu thuần": "Lưu chuyển tiền từ HĐKD / Doanh thu thuần",
+    "Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên lợi nhuận sau thuế": "Lưu chuyển tiền từ HĐKD / Lợi nhuận sau thuế",
+    "Tỷ lệ lưu chuyển tiền hoạt động đầu tư trên tổng lưu chuyển": "Lưu chuyển tiền từ HĐ đầu tư / Lưu chuyển tiền thuần",
+    "Tỷ lệ lưu chuyển tiền hoạt động tài chính trên tổng lưu chuyển": "Lưu chuyển tiền từ HĐ tài chính / Lưu chuyển tiền thuần",
+    # Combined
+    "ROA": "Lợi nhuận sau thuế / Tổng tài sản trung bình × 100%\n(Tổng tài sản trung bình = (Đầu kỳ + Cuối kỳ) / 2)",
+    "ROE": "Lợi nhuận sau thuế / Vốn chủ sở hữu trung bình × 100%\n(Vốn chủ sở hữu trung bình = (Đầu kỳ + Cuối kỳ) / 2)",
+    "Vòng quay tài sản": "Doanh thu thuần / Tổng tài sản trung bình",
+    "Vòng quay vốn chủ sở hữu": "Doanh thu thuần / Vốn chủ sở hữu trung bình",
+    "Vòng quay hàng tồn kho": "Chi phí vốn hàng bán / Hàng tồn kho",
+    "Vòng quay khoản phải thu": "Doanh thu thuần / Phải thu ngắn hạn",
+    "Dòng tiền tự do": "Lưu chuyển tiền từ HĐKD + Lưu chuyển tiền từ HĐ đầu tư",
+}
+
 def fmt_pct(v, k):
     """Format ratio for display - all labels are now full Vietnamese."""
     if v is None:
@@ -190,7 +225,7 @@ with tab1:
             c1, c2, c3 = st.columns(3)
             for i, (k, v) in enumerate(bcdkt_ratios.items()):
                 with [c1, c2, c3][i % 3]:
-                    st.metric(label=k, value=fmt_pct(v, k))
+                    st.metric(label=k, value=fmt_pct(v, k), help=FORMULAS.get(k, ""))
 
             st.subheader("Biểu đồ")
             ch1, ch2 = st.columns(2)
@@ -353,7 +388,7 @@ with tab2:
             c1, c2, c3 = st.columns(3)
             for i, (k, v) in enumerate(bkq_ratios.items()):
                 with [c1, c2, c3][i % 3]:
-                    st.metric(label=k, value=fmt_pct(v, k))
+                    st.metric(label=k, value=fmt_pct(v, k), help=FORMULAS.get(k, ""))
 
             st.subheader("Biểu đồ")
             ch1, ch2 = st.columns(2)
@@ -535,7 +570,7 @@ with tab3:
                 st.metric("💵 Lưu chuyển tiền thuần", value=f"{lct_thuan:,.0f}" if lct_thuan else "N/A")
             with c3:
                 for k, v in cf_ratios.items():
-                    st.metric(label=cf_ratio_labels.get(k, k), value=fmt_pct(v, k))
+                    st.metric(label=cf_ratio_labels.get(k, k), value=fmt_pct(v, k), help=FORMULAS.get(k, ""))
 
             # Quality assessment
             if lct_hdkd and ln_st_cf and ln_st_cf != 0:
@@ -804,7 +839,7 @@ with tab4:
                     v = combined_ratios.get(k)
                     with cols[i % 3]:
                         val_str = fmt_pct(v, k)
-                        st.metric(label=k, value=val_str)
+                        st.metric(label=k, value=val_str, help=FORMULAS.get(k, ""))
 
             # CHARTS
             st.subheader("📊 Biểu đồ tổng hợp")
