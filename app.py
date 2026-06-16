@@ -93,7 +93,7 @@ FORMULAS = {
     "Đòn bẩy tài chính": "Tổng tài sản / Vốn chủ sở hữu",
     # BCKQHĐKD
     "Biên lợi nhuận gộp": "Lợi nhuận gộp / Doanh thu thuần × 100%",
-    "Biên lợi nhuận hoạt động": "Lợi nhuận thuần từ HĐKD / Doanh thu thuần × 100%",
+    "Biên lợi nhuận hoạt động": "Lợi nhuận thuần từ hoạt động kinh doanh / Doanh thu thuần × 100%",
     "Biên lợi nhuận ròng": "Lợi nhuận sau thuế / Doanh thu thuần × 100%",
     "Tỷ lệ chi phí vốn hàng bán trên doanh thu": "Chi phí vốn hàng bán / Doanh thu thuần × 100%",
     "Tỷ lệ chi phí bán hàng trên doanh thu": "Chi phí bán hàng / Doanh thu thuần × 100%",
@@ -101,10 +101,10 @@ FORMULAS = {
     "Tăng trưởng doanh thu": "(Doanh thu cuối kỳ - Doanh thu đầu kỳ) / Doanh thu đầu kỳ × 100%",
     "Tăng trưởng lợi nhuận sau thuế": "(Lợi nhuận cuối kỳ - Lợi nhuận đầu kỳ) / Lợi nhuận đầu kỳ × 100%",
     # BCLCTT
-    "Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên doanh thu thuần": "Lưu chuyển tiền từ HĐKD / Doanh thu thuần",
-    "Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên lợi nhuận sau thuế": "Lưu chuyển tiền từ HĐKD / Lợi nhuận sau thuế",
-    "Tỷ lệ lưu chuyển tiền hoạt động đầu tư trên tổng lưu chuyển": "Lưu chuyển tiền từ HĐ đầu tư / Lưu chuyển tiền thuần",
-    "Tỷ lệ lưu chuyển tiền hoạt động tài chính trên tổng lưu chuyển": "Lưu chuyển tiền từ HĐ tài chính / Lưu chuyển tiền thuần",
+    "Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên doanh thu thuần": "Lưu chuyển tiền từ hoạt động kinh doanh / Doanh thu thuần",
+    "Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên lợi nhuận sau thuế": "Lưu chuyển tiền từ hoạt động kinh doanh / Lợi nhuận sau thuế",
+    "Tỷ lệ lưu chuyển tiền hoạt động đầu tư trên tổng lưu chuyển": "Lưu chuyển tiền từ hoạt động đầu tư / Lưu chuyển tiền thuần",
+    "Tỷ lệ lưu chuyển tiền hoạt động tài chính trên tổng lưu chuyển": "Lưu chuyển tiền từ hoạt động tài chính / Lưu chuyển tiền thuần",
     # Combined
     "ROA": "Lợi nhuận sau thuế / Tổng tài sản trung bình × 100%\n(Tổng tài sản trung bình = (Đầu kỳ + Cuối kỳ) / 2)",
     "ROE": "Lợi nhuận sau thuế / Vốn chủ sở hữu trung bình × 100%\n(Vốn chủ sở hữu trung bình = (Đầu kỳ + Cuối kỳ) / 2)",
@@ -112,7 +112,7 @@ FORMULAS = {
     "Vòng quay vốn chủ sở hữu": "Doanh thu thuần / Vốn chủ sở hữu trung bình",
     "Vòng quay hàng tồn kho": "Chi phí vốn hàng bán / Hàng tồn kho",
     "Vòng quay khoản phải thu": "Doanh thu thuần / Phải thu ngắn hạn",
-    "Dòng tiền tự do": "Lưu chuyển tiền từ HĐKD + Lưu chuyển tiền từ HĐ đầu tư",
+    "Dòng tiền tự do": "Lưu chuyển tiền từ hoạt động kinh doanh + Lưu chuyển tiền từ hoạt động đầu tư",
 }
 
 def fmt_pct(v, k):
@@ -300,7 +300,7 @@ with tab1:
                 st.plotly_chart(fig_tk, use_container_width=True)
 
 # ============================================================
-# TAB 2: BÁO CÁO KẾT QUẢ HĐKD
+# TAB 2: BÁO CÁO KẾT QUẢ HOẠT ĐỘNG KINH DOANH
 # ============================================================
 with tab2:
     st.header("Báo Cáo Kết Quả Hoạt Động Kinh Doanh")
@@ -461,7 +461,7 @@ with tab2:
                 st.markdown("**📈 Tăng trưởng Đầu kỳ vs Cuối kỳ**")
                 fig_growth_bkq = go.Figure()
                 items_bkq = [("Doanh thu thuần", "Doanh thu thuần"), ("Lợi nhuận gộp", "Lợi nhuận gộp"),
-                             ("Lợi nhuận HĐKD", "Lợi nhuận thuần từ hoạt động kinh doanh"), ("Lợi nhuận sau thuế", "Lợi nhuận sau thuế")]
+                             ("Lợi nhuận từ hoạt động kinh doanh", "Lợi nhuận thuần từ hoạt động kinh doanh"), ("Lợi nhuận sau thuế", "Lợi nhuận sau thuế")]
                 for label, key in items_bkq:
                     dk = bkq_extracted.get(key, {}).get("Đầu kỳ")
                     ck = bkq_extracted.get(key, {}).get("Cuối kỳ")
@@ -553,13 +553,13 @@ with tab3:
             cf_ratios = {}
             cf_ratio_labels = {}
             cf_ratios["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên doanh thu thuần"] = safe_div(lct_hdkd, dt_thuan_cf)
-            cf_ratio_labels["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên doanh thu thuần"] = "Lưu chuyển tiền từ HĐKD / Doanh thu thuần"
+            cf_ratio_labels["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên doanh thu thuần"] = "Lưu chuyển tiền từ hoạt động kinh doanh / Doanh thu thuần"
             cf_ratios["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên lợi nhuận sau thuế"] = safe_div(lct_hdkd, ln_st_cf)
-            cf_ratio_labels["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên lợi nhuận sau thuế"] = "Lưu chuyển tiền từ HĐKD / Lợi nhuận sau thuế"
+            cf_ratio_labels["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên lợi nhuận sau thuế"] = "Lưu chuyển tiền từ hoạt động kinh doanh / Lợi nhuận sau thuế"
             cf_ratios["Tỷ lệ lưu chuyển tiền hoạt động đầu tư trên tổng lưu chuyển"] = safe_div(lct_hd_dt, lct_thuan) if lct_thuan and lct_thuan != 0 else None
-            cf_ratio_labels["Tỷ lệ lưu chuyển tiền hoạt động đầu tư trên tổng lưu chuyển"] = "Lưu chuyển tiền từ HĐ đầu tư / Lưu chuyển thuần"
+            cf_ratio_labels["Tỷ lệ lưu chuyển tiền hoạt động đầu tư trên tổng lưu chuyển"] = "Lưu chuyển tiền từ hoạt động đầu tư / Lưu chuyển thuần"
             cf_ratios["Tỷ lệ lưu chuyển tiền hoạt động tài chính trên tổng lưu chuyển"] = safe_div(lct_hd_tc, lct_thuan) if lct_thuan and lct_thuan != 0 else None
-            cf_ratio_labels["Tỷ lệ lưu chuyển tiền hoạt động tài chính trên tổng lưu chuyển"] = "Lưu chuyển tiền từ HĐ tài chính / Lưu chuyển thuần"
+            cf_ratio_labels["Tỷ lệ lưu chuyển tiền hoạt động tài chính trên tổng lưu chuyển"] = "Lưu chuyển tiền từ hoạt động tài chính / Lưu chuyển thuần"
 
             c1, c2, c3 = st.columns(3)
             with c1:
@@ -577,11 +577,11 @@ with tab3:
                 quality = lct_hdkd / ln_st_cf
                 st.subheader("🔍 Chất lượng lợi nhuận")
                 if quality > 1:
-                    st.success(f"✅ Tỷ lệ Lưu chuyển tiền từ HĐKD / Lợi nhuận sau thuế = **{quality:.2f}x** — Doanh nghiệp tạo tiền tốt, lợi nhuận chất lượng cao.")
+                    st.success(f"✅ Tỷ lệ Lưu chuyển tiền từ hoạt động kinh doanh / Lợi nhuận sau thuế = **{quality:.2f}x** — Doanh nghiệp tạo tiền tốt, lợi nhuận chất lượng cao.")
                 elif quality > 0.7:
-                    st.warning(f"⚠️ Tỷ lệ Lưu chuyển tiền từ HĐKD / Lợi nhuận sau thuế = **{quality:.2f}x** — Khá, nhưng cần theo dõi chất lượng lợi nhuận.")
+                    st.warning(f"⚠️ Tỷ lệ Lưu chuyển tiền từ hoạt động kinh doanh / Lợi nhuận sau thuế = **{quality:.2f}x** — Khá, nhưng cần theo dõi chất lượng lợi nhuận.")
                 else:
-                    st.error(f"🔴 Tỷ lệ Lưu chuyển tiền từ HĐKD / Lợi nhuận sau thuế = **{quality:.2f}x** — Lợi nhuận chưa chuyển thành tiền, rủi ro chất lượng lợi nhuận.")
+                    st.error(f"🔴 Tỷ lệ Lưu chuyển tiền từ hoạt động kinh doanh / Lợi nhuận sau thuế = **{quality:.2f}x** — Lợi nhuận chưa chuyển thành tiền, rủi ro chất lượng lợi nhuận.")
 
             # BCLCTT CHARTS
             st.subheader("Biểu đồ")
@@ -761,7 +761,7 @@ with tab4:
             combined_ratios["Biên lợi nhuận hoạt động"] = safe_div(ln_hdkd, dt_thuan)
             combined_ratios["Biên lợi nhuận ròng"] = safe_div(ln_st, dt_thuan)
             combined_labels["Biên lợi nhuận gộp"] = "Lợi nhuận gộp / Doanh thu thuần"
-            combined_labels["Biên lợi nhuận hoạt động"] = "Lợi nhuận HĐKD / Doanh thu thuần"
+            combined_labels["Biên lợi nhuận hoạt động"] = "Lợi nhuận từ hoạt động kinh doanh / Doanh thu thuần"
             combined_labels["Biên lợi nhuận ròng"] = "Lợi nhuận sau thuế / Doanh thu thuần"
 
         # Hiệu quả sử dụng vốn
@@ -803,14 +803,14 @@ with tab4:
         # Dòng tiền
         if has_cf:
             combined_ratios["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên doanh thu thuần"] = safe_div(lct_hdkd, dt_thuan)
-            combined_labels["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên doanh thu thuần"] = "Lưu chuyển tiền từ HĐKD / Doanh thu thuần"
+            combined_labels["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên doanh thu thuần"] = "Lưu chuyển tiền từ hoạt động kinh doanh / Doanh thu thuần"
             combined_ratios["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên lợi nhuận sau thuế"] = safe_div(lct_hdkd, ln_st)
-            combined_labels["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên lợi nhuận sau thuế"] = "Lưu chuyển tiền từ HĐKD / Lợi nhuận sau thuế"
+            combined_labels["Tỷ lệ lưu chuyển tiền hoạt động kinh doanh trên lợi nhuận sau thuế"] = "Lưu chuyển tiền từ hoạt động kinh doanh / Lợi nhuận sau thuế"
             fcf_val = None
             if lct_hdkd is not None or lct_hd_dt is not None:
                 fcf_val = (lct_hdkd or 0) + (lct_hd_dt or 0)
             combined_ratios["Dòng tiền tự do"] = fcf_val
-            combined_labels["Dòng tiền tự do"] = "Lưu chuyển tiền từ HĐKD + Lưu chuyển tiền từ HĐ đầu tư"
+            combined_labels["Dòng tiền tự do"] = "Lưu chuyển tiền từ hoạt động kinh doanh + Lưu chuyển tiền từ hoạt động đầu tư"
 
         # DISPLAY
         if combined_ratios:
@@ -904,9 +904,9 @@ with tab4:
                     if dk or ck:
                         items_to_chart[label] = (dk, ck)
             if has_cf:
-                for label, key in [("Lưu chuyển tiền từ HĐKD", "Lưu chuyển tiền từ hoạt động kinh doanh"),
-                                    ("Lưu chuyển tiền HĐ đầu tư", "Lưu chuyển tiền từ hoạt động đầu tư"),
-                                    ("Lưu chuyển tiền HĐ tài chính", "Lưu chuyển tiền từ hoạt động tài chính"),
+                for label, key in [("Lưu chuyển tiền từ hoạt động kinh doanh", "Lưu chuyển tiền từ hoạt động kinh doanh"),
+                                    ("Lưu chuyển tiền từ hoạt động đầu tư", "Lưu chuyển tiền từ hoạt động đầu tư"),
+                                    ("Lưu chuyển tiền từ hoạt động tài chính", "Lưu chuyển tiền từ hoạt động tài chính"),
                                     ("Lưu chuyển tiền thuần", "Lưu chuyển tiền thuần")]:
                     dk = cf_extracted.get(key, {}).get("Đầu kỳ")
                     ck = cf_extracted.get(key, {}).get("Cuối kỳ")
@@ -933,7 +933,7 @@ with tab4:
                          "Chi phí bán hàng", "Chi phí quản lý doanh nghiệp", "Chi phí tài chính", "Chi phí khác",
                          "Lợi nhuận gộp", "Lợi nhuận thuần từ hoạt động kinh doanh", "Lợi nhuận sau thuế", "Thuế thu nhập doanh nghiệp"]:
                 if label in bkq_extracted:
-                    export_rows.append({"Chỉ tiêu": f"[Báo cáo kết quả HĐKD] {label}", "Đầu kỳ": bkq_extracted[label].get("Đầu kỳ"), "Cuối kỳ": bkq_extracted[label].get("Cuối kỳ"), "Ghi chú": ""})
+                    export_rows.append({"Chỉ tiêu": f"[Báo cáo kết quả hoạt động kinh doanh] {label}", "Đầu kỳ": bkq_extracted[label].get("Đầu kỳ"), "Cuối kỳ": bkq_extracted[label].get("Cuối kỳ"), "Ghi chú": ""})
         if has_cf:
             for label in ["Lưu chuyển tiền từ hoạt động kinh doanh", "Lưu chuyển tiền từ hoạt động đầu tư", "Lưu chuyển tiền từ hoạt động tài chính",
                          "Lưu chuyển tiền thuần", "Tiền đầu kỳ", "Tiền cuối kỳ"]:
@@ -957,7 +957,7 @@ with tab4:
                     if has_bcdkt:
                         pd.DataFrame(bcdkt_extracted).T.reset_index().rename(columns={"index": "Chỉ tiêu"}).to_excel(writer, index=False, sheet_name="Bảng cân đối KT")
                     if has_bkq:
-                        pd.DataFrame(bkq_extracted).T.reset_index().rename(columns={"index": "Chỉ tiêu"}).to_excel(writer, index=False, sheet_name="Báo cáo kết quả HĐKD")
+                        pd.DataFrame(bkq_extracted).T.reset_index().rename(columns={"index": "Chỉ tiêu"}).to_excel(writer, index=False, sheet_name="Báo cáo kết quả hoạt động kinh doanh")
                     if has_cf:
                         pd.DataFrame(cf_extracted).T.reset_index().rename(columns={"index": "Chỉ tiêu"}).to_excel(writer, index=False, sheet_name="Báo cáo lưu chuyển tiền tệ")
                 with open(tmp.name, "rb") as f:
